@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+# 本地语料与构建产物不入库（法律文本来自本地库，仓库只带代码+样例）
+corpus/local/
+data/
+*.db
+*.sqlite
+.pytest_cache/
