@@ -1,84 +1,107 @@
-# statute-rag · 法条混合检索底座
+English · [简体中文](./README.zh-CN.md)
 
-> **English TL;DR** — A statute-retrieval base where the retrieval unit is the article and verifiable citations are a hard constraint: structured chunking → character-bigram BM25 / LIKE fusion (RRF) → forced article-level citations, with a fully reproducible offline evaluation (Recall@5 **98.9% vs 77.4% lexical baseline**). Lexical-only by design; the semantic-vector channel is on the roadmap behind the same eval harness.
+# statute-rag · Article-level hybrid statute retrieval
 
-把「条」当检索单元、把「可验证的出处」当硬约束的法条检索 pipeline，配套**可复现的离线评测**。为上层法条问答提供「强制条文引用」的检索地基。
+A statute-retrieval pipeline that treats the **article** as the retrieval unit and **verifiable citations** as a hard constraint, with a **fully reproducible offline evaluation**. It is the retrieval foundation for statute question answering with forced article-level citations: structured article-level chunking → character-bigram BM25 / LIKE dual-channel fusion (RRF) → forced article-level citations.
 
-**当前版本 v0.1：词法检索三件套 + 真实评测数字。语义向量通道在路线图（见下），不在当前宣称范围内。**
+**Current version v0.1: a lexical retrieval trio plus real evaluation numbers. A semantic vector channel is on the roadmap (below) and is not part of what this version claims.**
 
-## 问题
+## Quick start (no real corpus required)
 
-法律问答 / 合规场景对检索的真实要求不是「找个相关文档」，而是：
+The repository does not ship real statute texts (see "Scope"). Without a legal.db you can still run the whole pipeline on a script-generated synthetic demo corpus — three commands, pure standard library, no model / API / GPU:
 
-- 给一句表述或一个关键词，**找到确切的那一条**；
-- 每个结果**必须带可回跳的出处**（法名 + 条号 + 原文），答错条文比答不出来更糟；
-- 检索质量要有**可复现的数字**，而不是「看起来挺准」。
+```bash
+# 1) Generate the synthetic demo corpus: ~100 programmatically generated
+#    fake articles + a synthetic gold set (fixed seed, reproducible)
+python scripts/make_demo_corpus.py
 
-本项目源自 [legal-wisdom-app](https://github.com/1438388098-glitch/legal-wisdom-app) 的实践：其 SQLite FTS5 在 unicode61 分词下，中文检索实际退化为子串/模糊匹配（有实证测试，见该仓 `tests/test_search.py`）——没有相关度打分，无法排序。statute-rag 从零建立带评测的检索底座。
+# 2) Evaluate the retrieval trio on the demo corpus
+python scripts/run_eval.py --corpus demo_corpus/corpus.jsonl --gold demo_corpus/gold.jsonl --out-dir demo_corpus
 
-## 边界（先说清不做什么）
-
-- **当前不是语义 RAG**：无 embedding、无向量库。字符二元组 BM25 是词法检索，查「防卫限度」不会命中只说「正当防卫明显超过必要限度」之外的语义改写。语义通道需要可用的中文 embedding 模型/接口，属 v0.2。
-- **金标是合成的**：题目由「条文中全库唯一的短语 → 关键词查询」机械生成，衡量词法召回，不是真实用户问题。真实问句金标（LLM 改写 + 人工抽检）在路线图上。
-- **语料不随仓库分发**：法律条文来自本地 legal-wisdom 库（263 部口径、14,212 条干净条文），仓库只含代码、测试与评测产物；复现需自备语料。
-- 不构成法律意见；条文内容以官方发布为准。
-
-## 机制
-
-```
-legal.db ──importer──> 语料 JSONL（质检三层过滤）
-              │            · 过滤 (cid:xx) 字体映射残片
-              │            · 过滤 <30 字解析残渣 / 空内容
-              │            · 14,344 条 → 14,212 条（弃 0.9%）
-              ▼
-   检索三件套（统一 Citation 输出：法名+条号+原文+id）
-   ├── LikeRetriever   子串精确基线（模拟 unicode61 下中文实际行为）
-   ├── BM25Retriever   字符二元组 BM25（零依赖、不需要分词器）
-   └── HybridRetriever RRF 排名级融合（两路都命中 → 浮顶）
-              ▼
-   评测（gold.py + eval_harness.py）
-   · 金标：IDF 最高且【全库唯一】的 6 字短语 → 关键词查询，seed 固定
-   · 指标：Recall@5 / MRR
+# 3) Search demo
+python scripts/search_cli.py --corpus demo_corpus/corpus.jsonl "台账公示" --k 2
 ```
 
-关键设计决策：
+> Scores on the demo corpus **only verify that the pipeline runs end to end** (template-generated fake articles are trivially separable from each other); they say nothing about real-world retrieval quality. For the real evaluation numbers see "Evaluation" below.
 
-- **唯一短语约束**：最初金标用「IDF 最高短语」，实测 74% 的查询短语跨条文复用（法条公式化表述），召回上限失真。改为「全库唯一」约束（倒排交集精确计数 df==1）后，每题只有一个正确答案。
-- **质检宁可少导入**：PDF 双栏解析存在串行乱序污染（见下方失败案例），质检只过滤可确定性识别的污染，乱序检测是开放问题。
+## The problem
 
-## 验证（真实数字，非虚构）
+Legal QA / compliance scenarios do not ask retrieval to "find a related document". They require:
 
-| 检索器 | Recall@5 | MRR |
+- given a statement or a keyword, **hit the exact article**;
+- every result **must carry a verifiable source** (law name + article number + original text) — citing the wrong article is worse than answering "not found";
+- retrieval quality must come with **reproducible numbers**, not "looks about right".
+
+This project grew out of practice with [legal-wisdom-app](https://github.com/1438388098-glitch/legal-wisdom-app): under unicode61 tokenization, its SQLite FTS5 search degrades Chinese queries into substring/fuzzy matching (empirically tested, see `tests/test_search.py` in that repo) — no relevance scoring, no ranking. statute-rag builds an evaluation-backed retrieval base from zero.
+
+## Scope (what this is not, stated up front)
+
+- **Not a semantic RAG, for now**: no embeddings, no vector store. Character-bigram BM25 is lexical retrieval — querying 防卫限度 ("limits of defense") will not match a semantic paraphrase that only says 正当防卫明显超过必要限度 ("justifiable defense clearly exceeding necessary limits"). The semantic channel needs a usable Chinese embedding model/API and belongs to v0.2.
+- **The gold set is synthetic**: questions are mechanically generated as "a phrase unique corpus-wide in an article → keyword query". They measure lexical recall, not real user questions. A real-question gold set (LLM rewrites + human spot checks) is on the roadmap.
+- **The corpus is not distributed with the repo**: statutes come from a local legal-wisdom database (263 laws, 14,212 clean articles); the repo contains code, tests, and evaluation artifacts only. Reproducing the real-corpus numbers requires your own corpus.
+- Nothing here is legal advice; the authoritative text of any statute is its official publication.
+
+## How it works
+
+```
+legal.db ──importer──> corpus JSONL (three-layer quality gate)
+              │            · drops (cid:xx) font-mapping debris
+              │            · drops <30-char parse residue / empty content
+              │            · 14,344 → 14,212 articles (0.9% discarded)
+              ▼
+   Retrieval trio (unified Citation output: law + article no. + text + id)
+   ├── LikeRetriever   exact substring baseline (mimics what unicode61
+   │                   actually does to Chinese queries)
+   ├── BM25Retriever   character-bigram BM25 (zero-dependency, no tokenizer)
+   └── HybridRetriever RRF rank-level fusion (hits from both channels
+                       rise to the top)
+              ▼
+   Evaluation (gold.py + eval_harness.py)
+   · Gold: the highest-IDF 6-char phrase that is unique corpus-wide
+     → keyword query, fixed seed
+   · Metrics: Recall@5 / MRR
+```
+
+Key design decisions:
+
+- **Unique-phrase constraint**: the first gold design took each article's "highest-IDF phrase"; in testing, 74% of such query phrases were reused across articles (statutes are formulaic), which distorted the recall ceiling. Switching to a "unique corpus-wide" constraint (exact df==1 counted via inverted-index intersection) leaves every question with exactly one correct answer.
+- **Prefer importing less over importing bad**: two-column PDF parsing produced interleaved-column pollution (see failure cases below); the quality gate filters only deterministically identifiable corruption. Out-of-order detection remains an open problem.
+
+## Evaluation (real numbers, not fabricated)
+
+**Honest scope note:** the numbers below come from a **synthetic gold set** (see "Scope") — each question is mechanically derived from a phrase unique corpus-wide, so they measure the lexical recall of "given a distinctive phrasing, retrieve the article back". They are **not** performance on real user questions (recall on real queries with typos, colloquial phrasing, or multiple entities will be lower).
+
+| Retriever | Recall@5 | MRR |
 |---|---|---|
-| like（子串基线） | 77.4% | 0.774 |
-| bm25（字符二元组） | 96.6% | 0.954 |
-| **hybrid（RRF 融合）** | **98.9%（+21.5pt vs 基线）** | **0.984** |
+| like (substring baseline) | 77.4% | 0.774 |
+| bm25 (character bigram) | 96.6% | 0.954 |
+| **hybrid (RRF fusion)** | **98.9% (+21.5pt vs baseline)** | **0.984** |
 
-- N=177 题，语料 14,212 条，seed=20260918，全部可复现：金标见 [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl)，报告见 [docs/eval_report.md](docs/eval_report.md)
-- 复现：
+- N=177 questions, corpus of 14,212 articles, seed=20260918, fully reproducible: gold set at [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl), report at [docs/eval_report.md](docs/eval_report.md).
+- Reproduce (requires your own legal.db):
 
 ```bash
-python scripts/run_eval.py --db <你的 legal.db> --out-dir data
+python scripts/run_eval.py --db <your legal.db> --out-dir data
 ```
 
-- 单元测试 19 例：`python -m unittest discover -s tests`
-- 30 秒演示：
+- 19 unit tests: `python -m unittest discover -s tests`
+- 30-second demo:
 
 ```bash
-python scripts/search_cli.py --db <你的 legal.db> "承诺生效时合同成立" --k 2
+python scripts/search_cli.py --db <your legal.db> "承诺生效时合同成立" --k 2
 # [1] 最高人民法院关于适用《中华人民共和国民法典》合同编通则若干问题的解释 第三条 …
 ```
 
-### 已知失败案例
+### Known failure cases
 
-- **乱序条文污染**：查询「正当防卫」时，命中了《突发公共卫生事件应对法》的条文——该部 PDF 双栏解析串行，多个栏位的文字交错混排，质检层无法识别乱序（无 `(cid:` 残片、长度正常），异部文字恰好含查询词。修复方向：基于「跨部高频引用串」的乱序检测、或对高风险文档换用更可靠的 PDF 提取参数后重建语料。
-- **词法检索天花板**：语义等价（口语问句 → 法言法语条文）完全依赖查询词与条文用词重叠，这是 v0.2 引入向量通道的根本原因。
-- **合成金标的保守性**：指标衡量「独特表述→条文」的词法召回，真实问句（含错字、口语、多实体）的召回会低于此数字。
+- **Out-of-order article pollution**: querying 正当防卫 ("justifiable defense") once hit an article of the《突发公共卫生事件应对法》— that PDF was parsed from two columns with the columns interleaved; the quality gate cannot detect the disorder (no `(cid:` debris, normal length), and text from another law happened to contain the query terms. Fix directions: disorder detection based on "high-frequency cross-law citation strings", or re-extracting high-risk documents with more reliable PDF settings and rebuilding the corpus.
+- **The lexical ceiling**: semantic equivalence (colloquial question → statutory wording) depends entirely on word overlap between the query and the article — the root reason v0.2 introduces the vector channel.
+- **Synthetic gold is conservative**: the metric measures lexical recall of "distinctive phrasing → article"; recall on real questions (typos, colloquialisms, multiple entities) will be lower than these numbers.
 
 ## Roadmap
 
-- **v0.2**：中文 embedding 通道（接口抽象，可选本地/远端）+ 重排 → 真语义混合检索；真实问句金标 200 题（LLM 改写 + 人工抽检报告）
-- **v0.3**：条/款/项多级分块；法条版本对齐（时效性）；「检索不到就拒答」策略与幻觉护栏评测
+- **v0.2**: Chinese embedding channel (interface abstraction, local/remote pluggable) + reranking → true semantic hybrid retrieval; a 200-question real-question gold set (LLM rewrites + human spot-check report)
+- **v0.3**: article/clause/item multi-level chunking; statute version alignment (temporal validity); a "refuse to answer when retrieval fails" policy and hallucination-guardrail evaluation
 
 ## License
 
