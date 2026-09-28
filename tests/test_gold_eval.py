@@ -86,6 +86,31 @@ class EvalHarnessTest(unittest.TestCase):
             m = evaluate(Ret(CORPUS), gold, k=5)
             self.assertGreater(m["recall_at_k"], 0.5)  # 词法检索对合成金标应当大部分命中
 
+    def test_multi_gold_ids_hit_any_and_use_first_rank(self):
+        gold = [
+            {"qid": "m1", "query": "行政处罚的程序", "gold_ids": [3, 999]},
+            {"qid": "m2", "query": "承诺通知到达要约人", "gold_ids": [2, 1]},
+        ]
+
+        class HitSecondGoldAtRank2(object):
+            def search(self, q, k=5):
+                gid = 3 if "行政处罚" in q else 1
+                return [{"id": 555, "law": "L", "num": "x", "text": "t", "score": 2, "retriever": "x"},
+                        {"id": gid, "law": "L", "num": "y", "text": "t", "score": 1, "retriever": "x"}]
+
+        m = evaluate(HitSecondGoldAtRank2(), gold, k=5)
+        self.assertEqual(m["recall_at_k"], 1.0)   # gold_ids 任一命中即算命中
+        self.assertAlmostEqual(m["mrr"], 0.5)     # 首个命中行都在第 2 位
+
+    def test_gold_id_fallback_still_works(self):
+        gold = [{"qid": "s1", "query": "正当防卫的成立", "gold_id": 1}]
+
+        class Perfect(object):
+            def search(self, q, k=5):
+                return [{"id": 1, "law": "L", "num": "1", "text": "t", "score": 1, "retriever": "x"}]
+
+        self.assertAlmostEqual(evaluate(Perfect(), gold, k=5)["mrr"], 1.0)
+
     def test_format_report(self):
         m = {"n": 2, "k": 5, "recall_at_k": 0.5, "mrr": 0.25}
         text = format_report([("bm25", m)], corpus_size=3)

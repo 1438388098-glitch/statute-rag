@@ -30,6 +30,8 @@ def main():
     parser.add_argument("--gold-size", type=int, default=DEFAULT_SIZE)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--k", type=int, default=5)
+    parser.add_argument("--gold-desc", default="合成金标，种子固定可复现",
+                        help="报告页脚的金标口径说明（如真实问句金标）")
     args = parser.parse_args()
 
     if args.db:
@@ -63,7 +65,7 @@ def main():
         results.append((name, m))
         print("  %s: Recall@%d=%.1f%% MRR=%.3f" % (name, args.k, m["recall_at_k"] * 100, m["mrr"]))
 
-    report = format_report(results, len(corpus))
+    report = format_report(results, len(corpus), gold_desc=args.gold_desc)
     print("")
     print(report)
     report_path = os.path.join(args.out_dir, "eval_report.md")
