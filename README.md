@@ -38,7 +38,7 @@ This project grew out of practice with [legal-wisdom-app](https://github.com/143
 
 - **Not a semantic RAG, for now**: no embeddings, no vector store. Character-bigram BM25 is lexical retrieval. v0.1.1 adds a lexical bridge — a colloquial↔statutory synonym dictionary plus query expansion (坐牢→服刑 "serving a prison term", 探视→会见 "visitation→meeting", 社保→社会保险 "social insurance", 1000元→一千元 numeral normalization) — lifting real-question Recall@5 from 26.3% to 44.7%; purely semantic paraphrases with no dictionary bridge still cannot be hit. The semantic channel needs a usable Chinese embedding model/API and belongs to v0.2.
 - **Two gold sets**: the synthetic gold (unique phrase → keyword query) measures the lexical recall ceiling; the real-question gold v1 (38 questions from genuine web Q&A, LLM-verified, human legal review pending) measures real-question performance (hybrid 26.3% → 44.7%). See [docs/real-question-eval.md](docs/real-question-eval.md).
-- **The corpus is not distributed with the repo**: statutes come from a local legal-wisdom database (263 laws, 14,212 clean articles); the repo contains code, tests, and evaluation artifacts only. Reproducing the real-corpus numbers requires your own corpus.
+- **The corpus is not distributed with the repo**: statutes come from a local legal-wisdom database (legal.db: 257 laws / 14,344 articles; after this repo's import quality gate: 14,212 clean articles covering 238 laws); the repo contains code, tests, and evaluation artifacts only. Reproducing the real-corpus numbers requires your own corpus.
 - Nothing here is legal advice; the authoritative text of any statute is its official publication.
 
 ## How it works
