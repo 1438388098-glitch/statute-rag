@@ -49,7 +49,8 @@ def main():
     print("查询：%s ｜ 检索器：%s" % (args.query, args.retriever))
     print("=" * 60)
     for i, cite in enumerate(results, 1):
-        print("[%d] %s %s（id=%d，score=%.4f）" % (i, cite["law"], cite["num"], cite["id"], cite["score"]))
+        # id 可能是 int（源库 id）或 str（演示语料 id），统一按字符串展示
+        print("[%d] %s %s（id=%s，score=%.4f）" % (i, cite["law"], cite["num"], cite["id"], cite["score"]))
         print("    " + cite["text"][:120] + ("…" if len(cite["text"]) > 120 else ""))
         print("-" * 60)
 

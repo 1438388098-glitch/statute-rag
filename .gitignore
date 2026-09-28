@@ -6,3 +6,6 @@ data/
 *.db
 *.sqlite
 .pytest_cache/
+
+# 演示语料产物可由 scripts/make_demo_corpus.py 一键重建，不入库
+demo_corpus/
