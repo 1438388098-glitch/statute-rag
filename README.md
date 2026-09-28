@@ -37,7 +37,7 @@ This project grew out of practice with [legal-wisdom-app](https://github.com/143
 ## Scope (what this is not, stated up front)
 
 - **Not a semantic RAG, for now**: no embeddings, no vector store. Character-bigram BM25 is lexical retrieval — querying 防卫限度 ("limits of defense") will not match a semantic paraphrase that only says 正当防卫明显超过必要限度 ("justifiable defense clearly exceeding necessary limits"). The semantic channel needs a usable Chinese embedding model/API and belongs to v0.2.
-- **The gold set is synthetic**: questions are mechanically generated as "a phrase unique corpus-wide in an article → keyword query". They measure lexical recall, not real user questions. A real-question gold set (LLM rewrites + human spot checks) is on the roadmap.
+- **Two gold sets**: the synthetic gold (unique phrase → keyword query) measures the lexical recall ceiling; the real-question gold v1 (38 questions from genuine web Q&A, LLM-verified, human legal review pending) measures real-question performance (hybrid 26.3%). See [docs/real-question-eval.md](docs/real-question-eval.md).
 - **The corpus is not distributed with the repo**: statutes come from a local legal-wisdom database (263 laws, 14,212 clean articles); the repo contains code, tests, and evaluation artifacts only. Reproducing the real-corpus numbers requires your own corpus.
 - Nothing here is legal advice; the authoritative text of any statute is its official publication.
 
@@ -69,22 +69,27 @@ Key design decisions:
 
 ## Evaluation (real numbers, not fabricated)
 
-**Honest scope note:** the numbers below come from a **synthetic gold set** (see "Scope") — each question is mechanically derived from a phrase unique corpus-wide, so they measure the lexical recall of "given a distinctive phrasing, retrieve the article back". They are **not** performance on real user questions (recall on real queries with typos, colloquial phrasing, or multiple entities will be lower).
+**Two gold sets, two scopes, reported side by side:**
 
-| Retriever | Recall@5 | MRR |
-|---|---|---|
-| like (substring baseline) | 77.4% | 0.774 |
-| bm25 (character bigram) | 96.6% | 0.954 |
-| **hybrid (RRF fusion)** | **98.9% (+21.5pt vs baseline)** | **0.984** |
+| Retriever | Synthetic gold Recall@5 | Synthetic MRR | Real-question gold v1 Recall@5 | Real-question MRR |
+|---|---|---|---|---|
+| like (substring baseline) | 77.4% | 0.774 | 0.0% | 0.000 |
+| bm25 (character bigram) | 96.6% | 0.954 | 26.3% | 0.180 |
+| **hybrid (RRF fusion)** | **98.9% (+21.5pt vs baseline)** | **0.984** | **26.3% (10/38)** | **0.180** |
 
-- N=177 questions, corpus of 14,212 articles, seed=20260918, fully reproducible: gold set at [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl), report at [docs/eval_report.md](docs/eval_report.md).
-- Reproduce (requires your own legal.db):
+- **Synthetic gold scope**: questions are mechanically derived from phrases unique corpus-wide (seed=20260918, N=177), measuring the lexical recall ceiling of "given a distinctive phrasing, retrieve the article back". Gold at [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl), report at [docs/eval_report.md](docs/eval_report.md).
+- **Real-question gold v1 (LLM-verified; human legal review pending)**: 38 questions taken verbatim from genuine legal Q&A posts on Baidu Zhidao (source URL recorded per question); the raw colloquial question is sent to the retriever unchanged. Hybrid Recall@5 = **26.3%** — 72.6 points below the synthetic number. Main causes: no lexical overlap between colloquial wording and statutory phrasing, intra-law competition among chunk rows, and the two-column PDF extraction pollution of gazette-style laws; the LIKE channel never fires, so hybrid gains nothing over bm25. Per-question details, failure analysis and coverage gaps: [docs/real-question-eval.md](docs/real-question-eval.md); gold at [gold/gold_real_38.jsonl](gold/gold_real_38.jsonl). **26.3% is the honest baseline of the current pipeline on real questions** and the direct motivation for the v0.2 semantic channel.
+- Reproduce (requires your own corpus `data/corpus.jsonl`):
 
 ```bash
-python scripts/run_eval.py --db <your legal.db> --out-dir data
+# Synthetic gold
+python scripts/run_eval.py --corpus data/corpus.jsonl --out-dir data
+# Real-question gold
+python scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
+python scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json --out-dir data --gold-desc "real-question gold v1 (LLM-verified, human legal review pending)"
 ```
 
-- 19 unit tests: `python -m unittest discover -s tests`
+- 21 unit tests: `python -m unittest discover -s tests`
 - 30-second demo:
 
 ```bash
@@ -94,13 +99,13 @@ python scripts/search_cli.py --db <your legal.db> "承诺生效时合同成立" 
 
 ### Known failure cases
 
-- **Out-of-order article pollution**: querying 正当防卫 ("justifiable defense") once hit an article of the《突发公共卫生事件应对法》— that PDF was parsed from two columns with the columns interleaved; the quality gate cannot detect the disorder (no `(cid:` debris, normal length), and text from another law happened to contain the query terms. Fix directions: disorder detection based on "high-frequency cross-law citation strings", or re-extracting high-risk documents with more reliable PDF settings and rebuilding the corpus.
-- **The lexical ceiling**: semantic equivalence (colloquial question → statutory wording) depends entirely on word overlap between the query and the article — the root reason v0.2 introduces the vector channel.
-- **Synthetic gold is conservative**: the metric measures lexical recall of "distinctive phrasing → article"; recall on real questions (typos, colloquialisms, multiple entities) will be lower than these numbers.
+- **Out-of-order article pollution**: querying 正当防卫 ("justifiable defense") once hit an article of the《突发公共卫生事件应对法》— that PDF was parsed from two columns with the columns interleaved; the quality gate cannot detect the disorder (no `(cid:` debris, normal length), and text from another law happened to contain the query terms. Fix directions: disorder detection based on "high-frequency cross-law citation strings", or re-extracting high-risk documents with more reliable PDF settings and rebuilding the corpus. The real-question gold makes this visible again: questions on gazette-style two-column laws (e.g. the 2025 public security punishments law) mostly fail (see failure case 4 in [docs/real-question-eval.md](docs/real-question-eval.md)).
+- **The lexical ceiling**: semantic equivalence (colloquial question → statutory wording) depends entirely on word overlap between the query and the article — on the real-question gold v1 hybrid reaches only 26.3%, the direct motivation for the v0.2 vector channel.
+- **Synthetic gold is conservative**: the metric measures lexical recall of "distinctive phrasing → article"; real-question recall is far lower — now measured at 26.3% with the real-question gold.
 
 ## Roadmap
 
-- **v0.2**: Chinese embedding channel (interface abstraction, local/remote pluggable) + reranking → true semantic hybrid retrieval; a 200-question real-question gold set (LLM rewrites + human spot-check report)
+- **v0.2**: Chinese embedding channel (interface abstraction, local/remote pluggable) + reranking → true semantic hybrid retrieval; real-question gold expansion (target 200 questions) + human legal review
 - **v0.3**: article/clause/item multi-level chunking; statute version alignment (temporal validity); a "refuse to answer when retrieval fails" policy and hallucination-guardrail evaluation
 
 ## License
