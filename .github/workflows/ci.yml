@@ -1,0 +1,48 @@
+# CI：单测 + demo 评测门禁（可复现口径见 README「Evaluation」）
+# 依赖说明：requirements.txt 为纯标准库（v0.1 零第三方依赖），无需安装步骤；
+# 真实语料 data/corpus.jsonl 不入库（.gitignore），单测使用临时目录自造语料，
+# demo 流程由 scripts/make_demo_corpus.py 现场重建，均不依赖 data/。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: 全量单测（34 例）
+        run: python -m unittest discover -s tests
+
+      - name: demo 第一步——生成合成演示语料
+        run: python scripts/make_demo_corpus.py
+
+      - name: demo 第二步——评测检索三件套
+        run: python scripts/run_eval.py --corpus demo_corpus/corpus.jsonl --gold demo_corpus/gold.jsonl --out-dir demo_corpus
+
+      - name: demo 门禁——断言 hybrid Recall@5 == 100%
+        run: |
+          python -c "
+          import io, re
+          t = io.open('demo_corpus/eval_report.md', encoding='utf-8').read()
+          rows = [l for l in t.splitlines() if l.startswith('| hybrid')]
+          assert len(rows) == 1, 'hybrid 行数异常: %r' % rows
+          m = re.search(r'\|\s*([0-9.]+)%', rows[0])
+          assert m and float(m.group(1)) == 100.0, 'hybrid Recall@5 != 100%%: %s' % rows[0]
+          print('demo gate OK:', rows[0].strip())
+          "
+
+      - name: 写 step summary（文档口径提示，非断言）
+        run: |
+          {
+            echo "demo gate: hybrid Recall@5 = 100.0%（合成演示语料，仅验证管线端到端可用）"
+            echo "real-gold hybrid Recall@5=44.7% (see docs)"
+          } >> "$GITHUB_STEP_SUMMARY"
