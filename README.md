@@ -1,5 +1,7 @@
 English · [简体中文](./README.zh-CN.md)
 
+[![CI](https://github.com/1438388098-glitch/statute-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/1438388098-glitch/statute-rag/actions/workflows/ci.yml)
+
 # statute-rag · Article-level hybrid statute retrieval
 
 A statute-retrieval pipeline that treats the **article** as the retrieval unit and **verifiable citations** as a hard constraint, with a **fully reproducible offline evaluation**. It is the retrieval foundation for statute question answering with forced article-level citations: structured article-level chunking → character-bigram BM25 (original query + synonym-expanded query) / LIKE multi-channel fusion (RRF) → forced article-level citations.

@@ -1,5 +1,7 @@
 [English](./README.md) · 简体中文
 
+[![CI](https://github.com/1438388098-glitch/statute-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/1438388098-glitch/statute-rag/actions/workflows/ci.yml)
+
 # statute-rag · 法条混合检索底座
 
 把「条」当检索单元、把「可验证的出处」当硬约束的法条检索 pipeline，配套**可复现的离线评测**。为上层法条问答提供「强制条文引用」的检索地基：结构化分条 → 字符二元组 BM25（原查询 + 同义扩展查询）/ LIKE 多路融合（RRF）→ 强制条文级引用。
