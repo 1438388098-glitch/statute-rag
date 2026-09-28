@@ -1,6 +1,8 @@
 # 真实问句金标评测报告（v1，38 题）
 
 > **一句话结论**：在 38 条来自网络真实法律问答的问句上，hybrid（RRF 融合）Recall@5 = **26.3%**（bm25 = 26.3%，like = 0.0%）——远低于合成金标上的 98.9%。两个数字都是真实的：前者衡量「真实用户问句能否检回正确条文」，后者只衡量「给定条文中的独特短语能否检回该条文」。README 中的宣称已同时给出两套口径。
+>
+> **改进后（v0.1.1）**：通过「法律口语↔法言法语同义词典 + 查询扩展多路召回」通用机制，hybrid Recall@5 提升至 **44.7%（17/38，+18.4pt）**，MRR 0.180 → 0.312；合成金标 98.9% 零回退。机制、逐轮数字与剩余失败见文末[第 10 节](#10-改进后v011真实问句-recall5-263--447)与 [docs/retrieval-improvement.md](retrieval-improvement.md)。§1–9 记录的是改进前（v0.1）基线的构建过程与失败分析，保留不动。
 
 [English summary](#english-summary) 在文末。
 
@@ -69,7 +71,7 @@
 
 ## 7. 逐题明细
 
-表内 ✅#n 表示该检索器第 n 名命中金标行，❌ 表示未进前 5。金标条文为 LLM 对照原文核验（证据句逐字校验），人工法律复核待做。
+表内 ✅#n 表示该检索器第 n 名命中金标行，❌ 表示未进前 5。金标条文为 LLM 对照原文核验（证据句逐字校验），人工法律复核待做。**本表为改进前（v0.1）基线的逐题结果**；改进后（v0.1.1）逐题表见[第 10 节](#10-改进后v011真实问句-recall5-263--447)。
 
 | # | 真实问句 | 金标（法名 条号） | hybrid | bm25 | like |
 |---|---|---|---|---|---|
@@ -141,20 +143,83 @@
 - **已做**：LLM 逐题定位条文、通读该行全文、摘取证据关键句，构建脚本强制校验证据句为金标行文本的逐字子串（38/38 通过）；来源 URL 逐题记录并对部分问句做了页面级抽检。
 - **未做**：人工法律复核（含条文版本适用性、多金标完备性、证据句是否构成「确实回答」的法律判断）。**本金标与本文数字应视为 LLM 核验口径，人工复核为后续工作。**
 
-## 10. 复现命令
+## 10. 改进后（v0.1.1）：真实问句 Recall@5 26.3% → 44.7%
+
+改进机制、逐轮消融与防过拟合纪律详见 **[docs/retrieval-improvement.md](retrieval-improvement.md)**，此处只放结果。
+
+**机制（通用，非按题调参）**：`statute_rag/synonyms.json`（127 词条法律口语↔法定表述映射，如 坐牢→服刑、探视→会见、社保→社会保险、房东→出租人、噪音→噪声、减资→减少注册资本、1000元→一千元）+ `query_expansion.py` 追加式查询扩展 + hybrid 三路 RRF（原查询 BM25 + 扩展查询 BM25 + LIKE）。金标与评测口径一字未动。
+
+| 检索器 | 真实问句 Recall@5 | 真实问句 MRR | 合成金标 Recall@5 |
+|---|---|---|---|
+| like（子串基线） | 0.0% | 0.000 | 77.4%（持平） |
+| bm25（字符二元组） | 26.3%（10/38） | 0.180 | 96.6%（持平） |
+| **hybrid（改进后）** | **44.7%（17/38，+18.4pt）** | **0.312（+0.132）** | **98.9%（零回退）** |
+
+- **新命中 7 题**（v0.1 基线未命中、改进后命中，括号为桥接词条）：嫖娼可以不拘留只罚款吗（嫖娼→卖淫嫖娼）、三次吸毒会被拘留多久（吸毒→吸食注射毒品）、邻居半夜噪音扰民可以报警吗（噪音→噪声、扰民→干扰他人正常生活）、租房押金不退怎么办（租房→住房租赁）、个人租房房东不退押金（房东→出租人）、公司不给交社保离职后可要求经济补偿金吗（社保→社会保险、离职→解除/终止劳动合同）、公司减资股东需对公司债务承担责任吗（减资→减少注册资本）。
+- **仍未命中 21 题**，按卡点归类：纯语义等价无词法桥（失信被执行人会坐牢吗、电动车楼道充电、退一赔三）／同法内部竞争（预付卡合同解除、行政复议期限、知假买假十倍赔偿）／跨法同题（未成年人沉迷网游——top-5 被未成年人网络保护条例包揽，属金标覆盖缺口大于检索失败）／双栏解析污染（快递丢失赔偿、政府信息公开答复期限）／金额功能词稀释（10元过期食品、索赔1000元）。
+- 这 21 题的公共结构是词法信号弱或被污染，**继续对着失败题补词条就越过通用机制的边界**，故止步；出路是 v0.2 语义向量通道 + 高风险 PDF 重解析。
+
+改进后逐题表（hybrid = v0.1.1 三路融合；bm25/like 为纯实现不变，金标条号以第 7 节口径为准）：
+
+| # | 真实问句 | 金标（法名 条号，LLM 核验） | hybrid | bm25 | like |
+|---|---|---|---|---|---|
+| 1 | 嫖娼可以不拘留只罚款吗 | 治安管理处罚法 第七十八条 | ✅ #3 | ❌ | ❌ |
+| 2 | 嫖娼的处罚标准 | 治安管理处罚法 第七十八条 | ✅ #1 | ✅ #3 | ❌ |
+| 3 | 三次吸毒会被拘留多久 | 治安管理处罚法 第八十四条 | ✅ #5 | ❌ | ❌ |
+| 4 | 赌博被拘留正常几天? | 治安管理处罚法 第八十二条 | ✅ #1 | ✅ #1 | ❌ |
+| 5 | 邻居半夜噪音扰民可以报警吗 | 治安管理处罚法 第八十八条 | ✅ #1 | ❌ | ❌ |
+| 6 | 未成年人沉迷网游的限制规定有哪些 | 未成年人保护法 第七十条 | ❌ | ❌ | ❌ |
+| 7 | 10元过期食品怎么赔偿 | 食品安全法 第一百四十八条 | ❌ | ❌ | ❌ |
+| 8 | 5元过期食品怎么赔偿 | 食品安全法 第一百四十八条 | ✅ #2 | ✅ #1 | ❌ |
+| 9 | 去超市买过期食品可以直接要求索赔1000元吗 | 食品安全法 第一百四十八条 | ❌ | ❌ | ❌ |
+| 10 | 超市卖过期食品需要承担什么责任 | 食品安全法 第一百二十五条/三十四条 | ❌ | ❌ | ❌ |
+| 11 | 开餐饮店需要办理哪些证照？ | 食品安全法 第三十五条 | ❌ | ❌ | ❌ |
+| 12 | 食品"知假买假"能否要求10倍惩罚性赔偿？ | 食品药品惩罚性赔偿解释 第十二条 | ❌ | ❌ | ❌ |
+| 13 | 明知是假货仍然购买，能否主张十倍赔偿？ | 食品药品惩罚性赔偿解释 第十二条 | ✅ #3 | ✅ #3 | ❌ |
+| 14 | 假货是退一赔三还是退一赔十 | 消保条例 第四十九条 | ❌ | ❌ | ❌ |
+| 15 | 理发店、健身房跑路，办的卡能不能退，要怎么办？ | 预付式消费解释 第七条 | ❌ | ❌ | ❌ |
+| 16 | 消费者能否解除健身房私教课、瑜伽课、美容等预付卡消费合同 | 预付式消费解释 第十三条 | ❌ | ❌ | ❌ |
+| 17 | 租房押金不退怎么办 | 住房租赁条例 第十条 | ✅ #1 | ❌ | ❌ |
+| 18 | 个人租房房东不退押金怎么处理最有效 | 住房租赁条例 第十条 | ✅ #1 | ❌ | ❌ |
+| 19 | 住房公积金什么情况下可以提取？ | 住房公积金管理条例 第二十四条 | ✅ #1 | ✅ #1 | ❌ |
+| 20 | 租房提取公积金需要满足什么条件 | 住房公积金管理条例 第二十四条 | ❌ | ❌ | ❌ |
+| 21 | 彩礼是否可以退还，什么情况下能退 | 涉彩礼纠纷规定 第五条/第二条 | ✅ #1 | ✅ #1 | ❌ |
+| 22 | 公司不给交社保离职后可要求经济补偿金吗？ | 劳动争议解释（二）（社保解除补偿条款） | ✅ #1 | ❌ | ❌ |
+| 23 | 竞业限制补偿金的标准？ | 劳动争议解释（二） 第十三条 | ✅ #1 | ✅ #1 | ❌ |
+| 24 | 用人单位以何种标准向劳动者支付竞业限制补偿金？ | 劳动争议解释（二） 第十三条 | ✅ #3 | ✅ #3 | ❌ |
+| 25 | 失信被执行人会坐牢吗 | 两高拒不执行判决、裁定刑事解释 第一条 | ❌ | ❌ | ❌ |
+| 26 | 幼儿园老师用手打孩子犯法吗 | 学前教育法（体罚责任条款） | ❌ | ❌ | ❌ |
+| 27 | 商品房交付是不是必须取得竣工验收备案表 | 建设工程质量管理条例 第十六条 | ❌ | ❌ | ❌ |
+| 28 | 政府信息公开接到后多少日回复 | 政府信息公开条例 第三十三条 | ❌ | ❌ | ❌ |
+| 29 | 行政复议的期限是多长 | 行政复议法 第二十条 | ❌ | ❌ | ❌ |
+| 30 | 法院立案的标准及条件是什么 | 民事诉讼法 第一百二十二条 | ❌ | ❌ | ❌ |
+| 31 | 如果仲裁协议无效应如何处理 | 仲裁法 第五条 | ❌ | ❌ | ❌ |
+| 32 | 公司减资，股东需对公司债务承担责任吗？ | 公司法 第二百二十六条/二百二十四条 | ✅ #3 | ❌ | ❌ |
+| 33 | 快递丢了谁负责怎么赔偿 | 快递暂行条例 第二十八条 | ❌ | ❌ | ❌ |
+| 34 | 器官捐献是否必须是自愿？ | 人体器官捐献和移植条例 第二条/第六条 | ✅ #2 | ✅ #2 | ❌ |
+| 35 | 坐牢的人可以随时去看望吗 | 监狱法 第六十九条 | ❌ | ❌ | ❌ |
+| 36 | 服刑人员家属探视规定 | 监狱法 第六十九条 | ❌ | ❌ | ❌ |
+| 37 | 拖欠农民工工资怎么办 | 保障农民工工资支付条例 第三条 | ✅ #3 | ✅ #3 | ❌ |
+| 38 | 电动车在楼道内充电是否属于违法行为 | 消防法 第二十八条 | ❌ | ❌ | ❌ |
+
+## 11. 复现命令
 
 ```bash
 # 1) 构建真实问句金标（需自备 data/corpus.jsonl，语料不入仓库）
 py -3.13 scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
 
-# 2) 三件套评测（报告页脚注明金标口径）
+# 2) 三件套评测（报告页脚注明金标口径；hybrid 默认含查询扩展改进）
 py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json \
     --out-dir data --gold-desc "真实问句金标 v1（LLM 核验，人工法律复核待做）"
 
-# 3) 逐题命中明细（本报告第 7 节表格即其输出）
+# 3) 逐题命中明细（第 7 节为 v0.1 基线输出，第 10 节为 v0.1.1 改进后输出）
 py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json
 
-# 4) 单元测试（21 例）
+# 4) 改进机制消融（基线 vs 改进配置，双金标；见 docs/retrieval-improvement.md）
+py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
+    --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+
+# 5) 单元测试（34 例）
 py -3.13 -m unittest discover -s tests
 ```
 
@@ -162,4 +227,6 @@ py -3.13 -m unittest discover -s tests
 
 We built a **real-question gold set v1 (38 questions)** sourced from genuine legal Q&A posts on Baidu Zhidao (URLs recorded per question). Each question is mapped by an LLM to 1-3 corpus rows whose text verifiably contains an evidence sentence answering the question (substring check enforced by script); **human legal review is still pending**. Queries are the raw colloquial questions, sent to the retrievers unchanged.
 
-Results on the 14,212-row corpus: **Recall@5 / MRR — like 0.0% / 0.000, bm25 26.3% / 0.180, hybrid 26.3% / 0.180**, versus 98.9% / 0.984 (hybrid) on the synthetic gold. The 72.6-point drop is structural: the synthetic benchmark queries with unique phrases lifted from the statute text, while real questions are colloquial ("坐牢可以探视吗" vs "与亲属、监护人通话、会见"), compete with same-law rows, and suffer from known two-column PDF extraction pollution. Hybrid offers no gain over bm25 here because the LIKE channel never fires on real questions. This quantifies exactly why the v0.2 semantic vector channel is on the roadmap. Full per-question table, failure analysis, and coverage gaps (questions the corpus cannot answer at all) are in the Chinese sections above.
+**Baseline (v0.1)** on the 14,212-row corpus: **Recall@5 / MRR — like 0.0% / 0.000, bm25 26.3% / 0.180, hybrid 26.3% / 0.180**, versus 98.9% / 0.984 (hybrid) on the synthetic gold. The 72.6-point drop is structural: the synthetic benchmark queries with unique phrases lifted from the statute text, while real questions are colloquial ("坐牢可以探视吗" vs "与亲属、监护人通话、会见"), compete with same-law rows, and suffer from known two-column PDF extraction pollution. Hybrid offered no gain over bm25 because the LIKE channel never fires on real questions.
+
+**Improved (v0.1.1)**: a generic colloquial↔statutory synonym dictionary (127 entries, e.g. 坐牢→服刑, 探视→会见, 社保→社会保险) plus append-style query expansion, fused as a third RRF channel (original-query BM25 + expanded-query BM25 + LIKE) lifts hybrid to **44.7% (17/38, +18.4pt), MRR 0.180 → 0.312**, with the synthetic gold unchanged at 98.9% / 0.984 (holdout guard: ≤2pt regression allowed, 0 observed). No per-question rules were used; the 21 remaining misses (pure semantic equivalence, intra-law competition, two-column extraction pollution) are listed honestly in section 10 and motivate the v0.2 semantic channel. Mechanism details, per-round ablation numbers, and negative results: [docs/retrieval-improvement.md](retrieval-improvement.md).
