@@ -1,5 +1,7 @@
 # statute-rag · 法条混合检索底座
 
+> **English TL;DR** — A statute-retrieval base where the retrieval unit is the article and verifiable citations are a hard constraint: structured chunking → character-bigram BM25 / LIKE fusion (RRF) → forced article-level citations, with a fully reproducible offline evaluation (Recall@5 **98.9% vs 77.4% lexical baseline**). Lexical-only by design; the semantic-vector channel is on the roadmap behind the same eval harness.
+
 把「条」当检索单元、把「可验证的出处」当硬约束的法条检索 pipeline，配套**可复现的离线评测**。为上层法条问答提供「强制条文引用」的检索地基。
 
 **当前版本 v0.1：词法检索三件套 + 真实评测数字。语义向量通道在路线图（见下），不在当前宣称范围内。**
