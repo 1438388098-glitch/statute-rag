@@ -12,11 +12,27 @@
   属于 v0.2 的规划内容，需要可用的中文 embedding 通道后接入；
 - LIKE 基线模拟的是 legal-wisdom 在 unicode61 分词下「中文子串实际走
   模糊匹配」的行为，作为对比下界。
+
+真实问句改进（v0.1.1，机制级，非按题调参；逐轮数字与消融见
+docs/retrieval-improvement.md）：
+- 多查询扩展召回：hybrid 在 RRF 中增加「替换式变体」与「追加式扩展」
+  BM25 路（口语↔法言法语词典 + 数字读法归一，见 query_expansion.py /
+  synonyms.json）——这是实测带来真实问句召回提升的核心机制；
+- 曾试过「法名先验加权」「查询 trigram 短语加权」两个 BM25 旋钮：
+  真实金标 Recall@5 零增量、MRR 略降，已按消融结论移除（负结果记录在
+  docs/retrieval-improvement.md）。
 """
+
+import math
+
+from statute_rag.query_expansion import expand_query, load_synonyms
 
 BM25_K1 = 1.5
 BM25_B = 0.75
 RRF_K = 60  # RRF 常数：抑制排名靠后结果的权重
+
+# hybrid 融合通道深度下限（消融测量后定值，见 docs/retrieval-improvement.md）
+HYBRID_FUSION_DEPTH = 30
 
 
 def _normalize(text):
@@ -33,6 +49,22 @@ def char_ngrams(text, n=2):
     if len(s) < n:
         return list(s)
     return [s[i:i + n] for i in range(len(s) - n + 1)]
+
+
+def query_grams(query, n=2):
+    """查询侧 n-gram：按空格分段切 gram，gram 不跨段。
+
+    与 char_ngrams 的差别仅在带空格的输入（如扩展查询「原词 同义词」）：
+    gram 不跨词边界，避免产生「询服」这类边界噪声 gram。语料侧索引仍用
+    char_ngrams（无空格语义），金标生成逻辑不受影响。
+    """
+    grams = []
+    for part in (query or "").split():
+        if len(part) < n:
+            grams.extend(list(part))
+        else:
+            grams.extend(part[i:i + n] for i in range(len(part) - n + 1))
+    return grams
 
 
 def _citation(item, score, retriever):
@@ -95,11 +127,11 @@ class BM25Retriever(object):
         df = self._df.get(gram, 0)
         if df == 0:
             return 0.0
-        import math
         return math.log((n - df + 0.5) / df + 1.0)
 
     def search(self, query, k=5):
-        grams = char_ngrams(_normalize(query))
+        query_norm = _normalize(query)
+        grams = query_grams(query_norm)
         if not grams:
             return []
         scores = {}
@@ -139,13 +171,28 @@ def rrf_fuse(result_lists, k=5, rrf_k=RRF_K):
 
 
 class HybridRetriever(object):
-    """BM25 + LIKE 双路 RRF 融合。"""
+    """BM25（原查询 + 同义扩展查询）+ LIKE 的多路 RRF 融合。
 
-    def __init__(self, corpus):
+    通道构成：
+    - bm25(原查询)：词法主路；
+    - bm25(扩展查询)：原查询追加同义词典表述与数字读法变体后另检一路，
+      让「坐牢」这类口语问句能经「服刑」命中条文（无命中时该路自动省略）；
+    - like(原查询)：精确子串路（对合成金标贡献互补命中）。
+    原查询信号永不替换、只增不改；通道深度取 max(HYBRID_FUSION_DEPTH, 2k)。
+    """
+
+    def __init__(self, corpus, use_expansion=True, synonyms=None):
         self.bm25 = BM25Retriever(corpus)
         self.like = LikeRetriever(corpus)
+        self._synonyms = (synonyms if synonyms is not None
+                          else load_synonyms()) if use_expansion else None
 
     def search(self, query, k=5):
-        a = self.bm25.search(query, k=k * 2)
-        b = self.like.search(query, k=k * 2)
-        return rrf_fuse([a, b], k=k)
+        depth = max(HYBRID_FUSION_DEPTH, k * 2)
+        channels = [self.bm25.search(query, k=depth),
+                    self.like.search(query, k=depth)]
+        if self._synonyms:
+            expanded = expand_query(query, self._synonyms)
+            if expanded != query:
+                channels.insert(1, self.bm25.search(expanded, k=depth))
+        return rrf_fuse(channels, k=k)
