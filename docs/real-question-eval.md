@@ -35,7 +35,7 @@
 ## 4. 评测设置
 
 - 语料：`data/corpus.jsonl`，14,212 条（本地 legal-wisdom 库导入，不入仓库）；
-- 金标：`gold/gold_real_38.jsonl`（入库副本；本地评测用 `data/gold_real_38.json`）；
+- 金标：`gold/gold_real_38.jsonl`（入库副本；本地评测用 `gold/gold_real_38.jsonl`）；
 - `query` = 真实问句原文；k=5；指标：Recall@5（金标任一行进前 5 的题占比）、MRR（首个命中行排名倒数的均值）。
 
 ## 5. 总体结果
@@ -206,18 +206,18 @@
 
 ```bash
 # 1) 构建真实问句金标（需自备 data/corpus.jsonl，语料不入仓库）
-py -3.13 scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
+py -3.13 scripts/build_real_gold.py --corpus data/corpus.jsonl --out gold/gold_real_38.jsonl
 
 # 2) 三件套评测（报告页脚注明金标口径；hybrid 默认含查询扩展改进）
-py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json \
+py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl \
     --out-dir data --gold-desc "真实问句金标 v1（LLM 核验，人工法律复核待做）"
 
 # 3) 逐题命中明细（第 7 节为 v0.1 基线输出，第 10 节为 v0.1.1 改进后输出）
-py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json
+py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl
 
 # 4) 改进机制消融（基线 vs 改进配置，双金标；见 docs/retrieval-improvement.md）
 py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
-    --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+    --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 
 # 5) 单元测试（34 例）
 py -3.13 -m unittest discover -s tests
