@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """逐题分析真实问句金标的命中情况，输出报告用的明细表（markdown）。
 
-用法：py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json
+用法：py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl
 """
 import argparse
 import io
@@ -19,7 +19,7 @@ RETRIEVERS = [("hybrid", HybridRetriever), ("bm25", BM25Retriever), ("like", Lik
 def main():
     parser = argparse.ArgumentParser(description="真实问句评测逐题分析")
     parser.add_argument("--corpus", default="data/corpus.jsonl")
-    parser.add_argument("--gold", default="data/gold_real_38.json")
+    parser.add_argument("--gold", default="gold/gold_real_38.jsonl")
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()
 

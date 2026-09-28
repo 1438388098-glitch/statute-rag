@@ -90,11 +90,11 @@ Key design decisions:
 # Synthetic gold
 python scripts/run_eval.py --corpus data/corpus.jsonl --out-dir data
 # Real-question gold
-python scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
-python scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json --out-dir data --gold-desc "real-question gold v1 (LLM-verified, human legal review pending)"
+python scripts/build_real_gold.py --corpus data/corpus.jsonl --out gold/gold_real_38.jsonl
+python scripts/run_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl --out-dir data --gold-desc "real-question gold v1 (LLM-verified, human legal review pending)"
 # Improvement ablation (baseline vs improved config, both gold sets)
 python scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
-    --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+    --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 ```
 
 - 34 unit tests: `python -m unittest discover -s tests`

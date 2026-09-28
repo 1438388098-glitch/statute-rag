@@ -2,7 +2,7 @@
 """检索改进消融：逐机制前后对比（真实金标 + 合成金标双口径）。
 
 用法：py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
-        --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+        --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 
 消融维度（均为通用机制参数，非按题调参）：
   A0 基线（use_expansion=False）—— 与改进前完全一致；
@@ -35,7 +35,7 @@ def load_jsonl(path):
 def main():
     parser = argparse.ArgumentParser(description="检索改进消融测量")
     parser.add_argument("--corpus", default="data/corpus.jsonl")
-    parser.add_argument("--gold-real", default="data/gold_real_38.json")
+    parser.add_argument("--gold-real", default="gold/gold_real_38.jsonl")
     parser.add_argument("--gold-synth", default="gold/gold_synth_seed20260918.jsonl")
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()

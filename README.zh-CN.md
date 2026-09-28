@@ -86,11 +86,11 @@ legal.db ──importer──> 语料 JSONL（质检三层过滤）
 # 合成金标
 python scripts/run_eval.py --corpus data/corpus.jsonl --out-dir data
 # 真实问句金标
-python scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
-python scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json --out-dir data --gold-desc "真实问句金标 v1（LLM 核验，人工法律复核待做）"
+python scripts/build_real_gold.py --corpus data/corpus.jsonl --out gold/gold_real_38.jsonl
+python scripts/run_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl --out-dir data --gold-desc "真实问句金标 v1（LLM 核验，人工法律复核待做）"
 # 改进机制消融（基线 vs 改进配置，双金标）
 python scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
-    --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+    --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 ```
 
 - 单元测试 34 例：`python -m unittest discover -s tests`

@@ -98,14 +98,14 @@
 ```bash
 # 消融矩阵（基线 vs 最终配置，双金标）
 py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
-    --gold-real data/gold_real_38.json --gold-synth gold/gold_synth_seed20260918.jsonl
+    --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 
 # 最终对比表（三检索器 × 两金标）
-py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json --out-dir data --gold-desc "真实问句金标（LLM 核验，人工法律复核待做）"
+py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl --out-dir data --gold-desc "真实问句金标（LLM 核验，人工法律复核待做）"
 py -3.13 scripts/run_eval.py --corpus data/corpus.jsonl --gold gold/gold_synth_seed20260918.jsonl --out-dir data
 
 # 逐题明细
-py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold data/gold_real_38.json
+py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold gold/gold_real_38.jsonl
 
 # 单元测试（34 例）
 py -3.13 -m unittest discover -s tests

@@ -13,7 +13,7 @@
 - 同一答案文本因分块重叠会出现在多个行内，每题最多保留证据占比最高的
   3 行作为 gold_ids（评测命中其中任一行即算命中）。
 
-用法：py -3.13 scripts/build_real_gold.py --corpus data/corpus.jsonl --out data/gold_real_38.json
+用法：py -3.13 scripts/build_real_gold.py --corpus data/corpus.jsonl --out gold/gold_real_38.jsonl
 """
 import argparse
 import io
@@ -133,7 +133,7 @@ MAX_GOLD = 3  # 每题最多保留的金标行数
 def main():
     parser = argparse.ArgumentParser(description="构建真实问句金标")
     parser.add_argument("--corpus", default="data/corpus.jsonl")
-    parser.add_argument("--out", default="data/gold_real_38.json")
+    parser.add_argument("--out", default="gold/gold_real_38.jsonl")
     parser.add_argument("--max-gold", type=int, default=MAX_GOLD)
     args = parser.parse_args()
 
