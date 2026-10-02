@@ -68,5 +68,5 @@ jobs:
         run: |
           {
             echo "demo gate: hybrid Recall@5 = 100.0%（合成演示语料，仅验证管线端到端可用）"
-            echo "real-gold hybrid Recall@5=44.7% (see docs)"
+            echo "current scope (v3 corpus, 25,273 articles): real-gold hybrid R@5=44.7%, R@30=81.6%; synthetic R@5=97.2% (see docs/eval_report.md)"
           } >> "$GITHUB_STEP_SUMMARY"

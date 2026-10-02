@@ -7,19 +7,23 @@
 ### Fixed
 - LikeRetriever 多文档命中排序：原实现主键是文档下标降序，与「位置越靠前越相关」的注释语义相反；已改为按命中位置升序（双金标数字零漂移）
 - run_eval 在全新输出目录上生成合成金标时因目录不存在崩溃（makedirs 时机早于写入）
+- **口径漂移修复**：语料补全到 v3（25,273 条）后 README/metrics.json 仍宣称 v1（14,212 条）口径——现已统一为 v3 当前口径 + 明确标注 v1/v2 历史口径；`check_doc_numbers.py` 新增「口径语料条数必须出现在两份 README 与评测报告」门禁，专门挡这类漂移
 
 ### Changed
+- **检索侧 v3 语料重标定**（诊断见 [docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md)）：`BM25_B` 0.75→0.6（v3 行长分布双峰后长度归一化成为主导项，v1 上近乎惰性）、扩展查询通道权重 1→2.5（`EXPANSION_CHANNEL_WEIGHT`，RRF 支持按通道加权）。真实问句 v3 口径 **R@5 31.6%→44.7%（= v1 口径）、R@30 73.7%→81.6%（超过 v1 的 78.9%）**，合成金标三版零回退；代价如实记录：v1/v2 的 MRR@5 下降（0.312→0.266 / 0.246→0.227）、v3 单题 r008 掉出 top-30
 - BM25 检索索引改为倒排 postings：单查询延迟 p50 43.1→12.7 ms、hybrid 102.7→30.3 ms（3.4×，真实语料基准，口径见 scripts/bench.py）；一次性索引构建 5.7→8.2 s
 - 双重审查修复：重排器返回空列表显式报错（契约：可截断不可清空）；bench 解析金标改用 json.loads
+- `scripts/gen_eval_report.py` 支持 `--history LABEL=PATH`，把三版语料并列表写进评测报告（历史语料不进 metrics.json）；`scripts/ablate_retrieval.py` 支持多云料（`--corpus label=path` 可重复）、多 k（`--ks`）与参数全表（`--b-scan` / `--weight-scan`）
 
 ### Added
-- **度量底座**：HybridRetriever 通道深度与 k 解耦（`recall(query, depth)` 完整融合排名 → 截 k）；`evaluate_multi_k` 同一份排名算 Recall@5/10/20/30；`rank_histogram` 金标排名分布；`scripts/bench.py` 延迟基准。真实问句固定深度 30 口径：R@5 44.7% → R@10 55.3% → R@20 68.4% → R@30 78.9%，21 题未命中中 13 题在 top-30 内（v0.2 重排工作面）
+- **度量底座**：HybridRetriever 通道深度与 k 解耦（`recall(query, depth)` 完整融合排名 → 截 k）；`evaluate_multi_k` 同一份排名算 Recall@5/10/20/30；`rank_histogram` 金标排名分布；`scripts/bench.py` 延迟基准。真实问句固定深度 30 口径（v1 语料）：R@5 44.7% → R@10 55.3% → R@20 68.4% → R@30 78.9%，21 题未命中中 13 题在 top-30 内（v0.2 重排工作面）
 - **Reranker 接口**（`statute_rag/interfaces.py`）：`HybridRetriever(reranker=…)` 接入点，reranker=None 与 v0.1.1 逐位等价；只动顺序不动 Citation 形状，语义依赖不进核心 import 链，真模型适配器留待 v0.2
 - **可安装包**：pyproject.toml（零运行时依赖，dynamic version 单点，package-data 收录 synonyms.json），CI 安装冒烟
 - **评测报告机器生成**：`scripts/gen_eval_report.py` 产出 [docs/eval_report.md](docs/eval_report.md)（补齐真实问句口径、深度曲线、排名分布）与 [docs/metrics.json](docs/metrics.json)（数字单一来源）；`scripts/check_doc_numbers.py` 在 CI 对账两份 README（15 个展示数字）
 - **金标复核闭环**：`gold/real38_review_status.json` 持久化人工复核状态（重生成工作表不丢结果，表头进度计数）；r003/r004/r012/r030 标行标签偏移 ⚠；real-question-eval §7/§10 条号口径矛盾如实标注、待复核裁决
 - **工程**：CI 矩阵 3.9/3.13 + ruff 基础 lint 门禁；CLI 友好报错、run_eval 自动建输出目录、search_cli --full
 - BM25 k1/b 参数网格与加权 RRF 两条负结果补入负结果清单
+- **v3 语料轮诊断与负结果**：[docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md)（miss 分类学、逐题排名迁移、b/权重全网格）；同 (law,num) 去重折叠、同法限流、引用行降权、like(扩展) 通道、多视图融合、长度比封顶、k1 网格、深度/RRF_K 扫描、词典扩容共 9 条负结果记入该文 §6 与 [docs/retrieval-improvement.md](docs/retrieval-improvement.md) §4b
 
 ## [v0.1.1] - 2026-09-29
 

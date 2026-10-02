@@ -1,19 +1,19 @@
 {
   "generated": {
-    "commit": "cd53923",
-    "corpus_size": 14212,
-    "date": "2026-10-02 12:14"
+    "commit": "9932b14",
+    "corpus_size": 25273,
+    "date": "2026-10-02 18:23"
   },
   "real": {
     "bm25": {
-      "mrr": 0.18,
-      "mrr_display": "0.180",
-      "recall_at_5": 0.2632,
-      "recall_at_5_display": "26.3%"
+      "mrr": 0.14,
+      "mrr_display": "0.140",
+      "recall_at_5": 0.2368,
+      "recall_at_5_display": "23.7%"
     },
     "hybrid": {
-      "mrr": 0.312,
-      "mrr_display": "0.312",
+      "mrr": 0.25,
+      "mrr_display": "0.250",
       "recall_at_5": 0.4474,
       "recall_at_5_display": "44.7%"
     },
@@ -26,36 +26,36 @@
     "n": 38
   },
   "real_deep": {
-    "recall_at_10": 0.5526,
+    "recall_at_10": 0.5263,
     "recall_at_20": 0.6842,
-    "recall_at_30": 0.7895,
+    "recall_at_30": 0.8158,
     "recall_at_5": 0.4474
   },
   "real_deep_display": {
-    "R@10": "55.3%",
+    "R@10": "52.6%",
     "R@20": "68.4%",
-    "R@30": "78.9%",
+    "R@30": "81.6%",
     "R@5": "44.7%"
   },
   "real_hybrid_rank_histogram": {
-    "1": 9,
-    "11-30": 9,
-    "2-5": 8,
-    "6-10": 4,
-    "miss": 8
+    "1": 6,
+    "11-30": 11,
+    "2-5": 11,
+    "6-10": 3,
+    "miss": 7
   },
   "synth": {
     "bm25": {
-      "mrr": 0.954,
-      "mrr_display": "0.954",
-      "recall_at_5": 0.9661,
-      "recall_at_5_display": "96.6%"
+      "mrr": 0.905,
+      "mrr_display": "0.905",
+      "recall_at_5": 0.9379,
+      "recall_at_5_display": "93.8%"
     },
     "hybrid": {
-      "mrr": 0.984,
-      "mrr_display": "0.984",
-      "recall_at_5": 0.9887,
-      "recall_at_5_display": "98.9%"
+      "mrr": 0.968,
+      "mrr_display": "0.968",
+      "recall_at_5": 0.9718,
+      "recall_at_5_display": "97.2%"
     },
     "like": {
       "mrr": 0.774,
