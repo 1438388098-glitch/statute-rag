@@ -2,9 +2,9 @@
 
 > **本文件由 `scripts/gen_eval_report.py` 生成（需维护者本地语料），勿手改；**
 > 数字单一来源是 [docs/metrics.json](metrics.json)，CI 校验两份 README 与之一致。
-> **当前口径语料：25,273 条**（v3 法条补全后；v1/v2 为历史口径，见文末并列表）。
-> 生成于 2026-10-02 18:23，commit `9932b14`。
-> 复现：`python scripts/gen_eval_report.py --corpus data/corpus_v3.jsonl --history data/corpus.jsonl --history data/corpus_v2.jsonl`
+> **当前口径语料：25,273 条**（v3 法条补全后；v1/v2 为历史口径，见文末并列表）
+> 生成于 2026-10-02 20:08，commit `31f3dcd`。
+> 复现：`python scripts/gen_eval_report.py --corpus data/corpus_v3.jsonl --corpus-label v3 --history data/corpus.jsonl --history data/corpus_v2.jsonl --scope-note "（v3 法条补全后；v1/v2 为历史口径，见文末并列表）"`
 ## 合成金标（seed=20260918，「全库唯一短语 → 关键词查询」）
 
 | 检索器 | Recall@5 | MRR |
@@ -32,6 +32,8 @@
 | like（子串基线） | 0.0% | 0.0% | 0.0% | 0.0% |
 | bm25（字符二元组） | 23.7% | 36.8% | 44.7% | 52.6% |
 | hybrid（RRF 融合） | 44.7% | 52.6% | 68.4% | 81.6% |
+
+> 噪声限定：真实 R@5 的最后 2.6pt（扩展通道权重 w 2.0→2.5）只等于 1 道题的名次交换，落在 38 题的量化噪声内（1 题 = 2.6pt）；跨权重稳定、三版语料一致的硬结论是 R@30（v3 73.7%→81.6%）。
 
 
 ### hybrid 排名分布（真实问句，max_k=30）
