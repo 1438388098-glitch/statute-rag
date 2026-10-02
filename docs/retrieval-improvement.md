@@ -1,6 +1,6 @@
 # 真实问句检索改进实验记录（v0.1.1）
 
-> **口径提示（2026-10 追加）**：本文全部数字为 **v1 语料（14,212 条）口径**。语料已按法考汇编补全到 v3（25,273 条 / 432 部），同一批问句的 R@5 一度降到 31.6%、经检索侧重标定恢复到 44.7%。**当前口径以 [docs/eval_report.md](eval_report.md) / [docs/metrics.json](metrics.json)（v3）为准**；v3 轮的诊断、修订与负结果见 [docs/retrieval-v3-diagnosis.md](retrieval-v3-diagnosis.md) 与本文 §4b、§8。
+> **口径提示（2026-10 追加）**：**§0–§7 全部数字为 v1 语料（14,212 条）口径**；§4b 与 §8 记的是 v3 轮的负结果与修订，除注明外亦沿用 v1 口径并以「v3」显式标注。语料已按法考汇编补全到 v3（25,273 条 / 432 部），同一批问句的 R@5 一度降到 31.6%、经检索侧重标定恢复到 44.7%。**当前口径以 [docs/eval_report.md](eval_report.md) / [docs/metrics.json](metrics.json)（v3）为准**；v3 轮的诊断、修订与负结果见 [docs/retrieval-v3-diagnosis.md](retrieval-v3-diagnosis.md) 与本文 §4b、§8。
 
 > **一句话结论（v1 口径）**：用「法律口语↔法言法语同义词典 + 查询扩展多路召回」这一通用机制，真实问句金标（38 题，百度知道真实提问）上 hybrid Recall@5 从 **26.3%（10/38）提升到 44.7%（17/38，+18.4pt）**，MRR 从 0.180 到 0.312；**合成金标 Recall@5 保持 98.9%、MRR 保持 0.984，零回退**（守门线为回退 ≤2pt）。剩余 21 题未命中如实列出（见 §6），主要卡在纯语义等价与语料解析污染，是 v0.2 向量通道的工作。
 
@@ -34,7 +34,7 @@
 2. 追加式扩展：原查询整体保留，命中词的全部法定表述接到查询尾部（上限 8 词）——原查询信号永不替换、只增不改；
 3. 数字读法归一：`1000元→一千元`、`10倍→十倍`、`第10条→第十条`（仅转换「数字+单位字」与「第+数字」两类，裸数字/年份不转，避免错误读法）。
 
-**融合** `statute_rag/retrieval.py::HybridRetriever`：三路 RRF——`bm25(原查询)` + `bm25(扩展查询)`（扩展无命中时自动省略）+ `like(原查询)`；每路候选深度 `max(30, 2k)`。查询侧 n-gram 按空格分段切分（`query_grams`），gram 不跨词边界，避免扩展查询产生「询服」类边界噪声 gram；语料侧索引与金标生成逻辑不受影响。
+**融合** `statute_rag/retrieval.py::HybridRetriever`：三路 RRF——`bm25(原查询)` + `bm25(扩展查询)`（扩展无命中时自动省略）+ `like(原查询)`；每路候选深度 `max(30, k)`（`HYBRID_FUSION_DEPTH=30` 与 k 解耦，见 retrieval.py）。查询侧 n-gram 按空格分段切分（`query_grams`），gram 不跨词边界，避免扩展查询产生「询服」类边界噪声 gram；语料侧索引与金标生成逻辑不受影响。
 
 **为什么有效**：零重叠类失败靠扩展查询直接建立词法桥（坐牢→服刑、探视→会见、噪音→噪声）；近似命中类失败靠「金标行在扩展通道排名高 → RRF 第二票」抬进 top-5。
 
@@ -129,7 +129,7 @@ py -3.13 scripts/run_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_synt
 # 逐题明细
 py -3.13 scripts/analyze_real_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_real_38.jsonl
 
-# 单元测试（62 例）
+# 单元测试（119 例）
 py -3.13 -m unittest discover -s tests
 ```
 
