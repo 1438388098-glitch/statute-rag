@@ -48,6 +48,69 @@ def evaluate(retriever, gold, k=5):
     }
 
 
+def evaluate_multi_k(retriever, gold, ks=(5, 10, 20, 30)):
+    """一次取回 max(ks) 深的排名，在同一份排名上计算各 k 点指标。
+
+    为什么不逐 k 调 search(k=...)：混合检索的通道深度属于检索配置，
+    同一份排名下跨 k 比较才有意义——各点差异全部来自「截断位置」，
+    度量的是「检到了但排不进前 k」的重排空间。返回 {k: metrics}。
+    """
+    if not gold:
+        return dict((k, {"n": 0, "recall_at_k": 0.0, "mrr": 0.0, "k": k})
+                    for k in ks)
+    kmax = max(ks)
+    hits = dict((k, 0) for k in ks)
+    rr = dict((k, 0.0) for k in ks)
+    for q in gold:
+        gids = _gold_ids(q)
+        results = retriever.search(q["query"], k=kmax)
+        rank = None
+        for i, cite in enumerate(results, start=1):
+            if cite["id"] in gids:
+                rank = i
+                break
+        if rank is None:
+            continue
+        for k in ks:
+            if rank <= k:
+                hits[k] += 1
+                rr[k] += 1.0 / rank
+    n = len(gold)
+    return dict((k, {"n": n, "k": k,
+                     "recall_at_k": hits[k] / float(n),
+                     "mrr": rr[k] / float(n)})
+                for k in ks)
+
+
+def rank_histogram(retriever, gold, max_k=30):
+    """金标排名分布：命中排名落在 1 / 2-5 / 6-10 / 11-max_k 的题数与未进前 max_k 数。
+
+    排名 6-max_k 的题就是重排通道（v0.2）的直接工作面；全库语料下
+    「未进前 max_k」通常意味着词法/语料层失败，重排救不了。
+    返回 {"1": n, "2-5": n, "6-10": n, "11-<max_k>": n, "miss": n}。
+    """
+    buckets = {"1": 0, "2-5": 0, "6-10": 0, "11-%d" % max_k: 0, "miss": 0}
+    for q in gold:
+        gids = _gold_ids(q)
+        results = retriever.search(q["query"], k=max_k)
+        rank = None
+        for i, cite in enumerate(results, start=1):
+            if cite["id"] in gids:
+                rank = i
+                break
+        if rank is None:
+            buckets["miss"] += 1
+        elif rank == 1:
+            buckets["1"] += 1
+        elif rank <= 5:
+            buckets["2-5"] += 1
+        elif rank <= 10:
+            buckets["6-10"] += 1
+        else:
+            buckets["11-%d" % max_k] += 1
+    return buckets
+
+
 def format_report(results, corpus_size, gold_desc="合成金标，种子固定可复现"):
     """results: [("like", metrics), ...] → 对比表文本。gold_desc 说明金标口径。"""
     lines = []

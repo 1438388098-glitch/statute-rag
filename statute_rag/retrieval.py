@@ -31,7 +31,8 @@ BM25_K1 = 1.5
 BM25_B = 0.75
 RRF_K = 60  # RRF 常数：抑制排名靠后结果的权重
 
-# hybrid 融合通道深度下限（消融测量后定值，见 docs/retrieval-improvement.md）
+# hybrid 融合通道深度（消融测量后定值，见 docs/retrieval-improvement.md）。
+# 深度属于检索配置而非返回条数：跨 k 评测须用同一深度取排名再截取。
 HYBRID_FUSION_DEPTH = 30
 
 
@@ -154,6 +155,7 @@ def rrf_fuse(result_lists, k=5, rrf_k=RRF_K):
 
     每条结果的得分 = Σ 1 / (rrf_k + rank_i)；在多路中都出现的条文会
     自然浮到顶部。返回结构与单路一致（retriever 字段记为 "hybrid"）。
+    k=None 时返回完整融合排名（供跨 k 评测截取，见 HybridRetriever.recall）。
     """
     fused = {}
     for results in result_lists:
@@ -167,6 +169,8 @@ def rrf_fuse(result_lists, k=5, rrf_k=RRF_K):
             entry["score"] += 1.0 / (rrf_k + rank)
             entry["retriever"] = "hybrid"
     ranked = sorted(fused.values(), key=lambda c: (-c["score"], c["id"]))
+    if k is None:
+        return ranked
     return ranked[:k]
 
 
@@ -178,7 +182,12 @@ class HybridRetriever(object):
     - bm25(扩展查询)：原查询追加同义词典表述与数字读法变体后另检一路，
       让「坐牢」这类口语问句能经「服刑」命中条文（无命中时该路自动省略）；
     - like(原查询)：精确子串路（对合成金标贡献互补命中）。
-    原查询信号永不替换、只增不改；通道深度取 max(HYBRID_FUSION_DEPTH, 2k)。
+    原查询信号永不替换、只增不改。
+
+    通道深度与 k 解耦：HYBRID_FUSION_DEPTH 是检索配置的一部分，search(k≤15)
+    恒用 depth=30（v0.1.1 全部已发布数字的口径，逐位不变）；跨 k 的可比
+    排名（Recall@5/10/20/30）走 recall(query, depth) 取完整融合排名后截取，
+    见 eval_harness.evaluate_multi_k。仅当 k 超过该深度时才临时加深通道喂饱 k。
     """
 
     def __init__(self, corpus, use_expansion=True, synonyms=None):
@@ -187,12 +196,23 @@ class HybridRetriever(object):
         self._synonyms = (synonyms if synonyms is not None
                           else load_synonyms()) if use_expansion else None
 
-    def search(self, query, k=5):
-        depth = max(HYBRID_FUSION_DEPTH, k * 2)
+    def _channels(self, query, depth):
         channels = [self.bm25.search(query, k=depth),
                     self.like.search(query, k=depth)]
         if self._synonyms:
             expanded = expand_query(query, self._synonyms)
             if expanded != query:
                 channels.insert(1, self.bm25.search(expanded, k=depth))
-        return rrf_fuse(channels, k=k)
+        return channels
+
+    def recall(self, query, depth=HYBRID_FUSION_DEPTH):
+        """固定通道深度召回：返回完整 RRF 融合排名，不按 k 截断。
+
+        跨 k 对比评测必须取自同一份排名——混合检索里通道深度决定「检到
+        什么」，截断位置决定「呈现多少」，两者混在 search(k) 里会让
+        Recall@k 各点变成不同检索配置下的数字。
+        """
+        return rrf_fuse(self._channels(query, depth), k=None)
+
+    def search(self, query, k=5):
+        return self.recall(query, depth=max(HYBRID_FUSION_DEPTH, k))[:k]
