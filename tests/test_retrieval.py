@@ -42,6 +42,19 @@ class LikeRetrieverTest(unittest.TestCase):
         self.assertEqual(r[0]["num"], "第二条")
         self.assertIn("要约", r[0]["text"])  # 引用带条文原文
 
+    def test_multi_doc_hits_rank_by_match_position(self):
+        # 多文档命中时按命中位置排序：位置越靠前越相关（与注释语义一致），
+        # 而不是按文档下标降序。真实语料中同句式跨条复用很常见，此口径
+        # 直接影响 LIKE 路在 RRF 融合里的票面次序。
+        corpus = [
+            {"id": 1, "law": "测试法一", "num": "第一条",
+             "text": "承诺生效时合同成立，但法律另有规定或者当事人另有约定的除外。"},
+            {"id": 2, "law": "测试法二", "num": "第九条",
+             "text": "本条是关于合同订立时间的一般规定。依照前述规则，承诺生效时合同成立，特此明确。"},
+        ]
+        hits = LikeRetriever(corpus).search("承诺生效时合同成立", k=2)
+        self.assertEqual(_ids(hits), [1, 2])
+
     def test_miss_returns_empty(self):
         self.assertEqual(LikeRetriever(CORPUS).search("此处没有的词组"), [])
 

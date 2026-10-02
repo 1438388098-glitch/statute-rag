@@ -95,9 +95,9 @@ class LikeRetriever(object):
         for i, text in enumerate(self._texts):
             pos = text.find(q)
             if pos >= 0:
-                hits.append((i, -pos))  # 位置越靠前越相关（稳定次序）
-        hits.sort(reverse=True)
-        return [_citation(self.corpus[i], 1.0, "like") for i, _ in hits[:k]]
+                hits.append((pos, i))  # 位置越靠前越相关（同位置按下标稳定次序）
+        hits.sort()
+        return [_citation(self.corpus[i], 1.0, "like") for _, i in hits[:k]]
 
 
 class BM25Retriever(object):
