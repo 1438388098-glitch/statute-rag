@@ -1,0 +1,28 @@
+{
+  "_readme": "金标人工复核状态（gold_real_38.jsonl 的 38 题）。复核人把结果写进对应 qid 条目后重跑 scripts/make_gold_review_worksheet.py，工作表的「复核」列会由此文件预填，重新生成不丢人工结果。",
+  "_fields": {
+    "status": "✓（确实回答）| ✗（未回答或答非所问）| 存疑（无法确定）| 留空=未复核",
+    "reviewer": "复核人姓名/ID",
+    "date": "复核日期 YYYY-MM-DD",
+    "note": "备注（如修改金标的理由）",
+    "label_offset": "true = 金标 num（分块行标签）与证据句口径不一致，复核时以 evidence 定位真实条文",
+    "offset_note": "行标签偏移的具体说明"
+  },
+  "_口径声明": "证据句口径 = evidence 所在条文的实际条号（LLM 核验 + 人工复核裁决）；行标签口径 = 语料分块行的 num 字段。两者不一致源于分块跨条与双栏 PDF 解析污染（见 docs/real-question-eval.md §3/§8）。构建时已核对出 4 行偏移（r003/r004/r012/r030）。",
+  "r003": {
+    "label_offset": true,
+    "offset_note": "证据句口径：第八十七条（docs §7）；金标 num（行标签）：第八十四条。语料双栏污染无法机械判定真实条号，复核时以 evidence「聚众、组织吸食、注射毒品的」在干净文本中定位裁决。"
+  },
+  "r004": {
+    "label_offset": true,
+    "offset_note": "证据句口径：第八十二条（docs §7）；金标 num（行标签）：第七十七条。"
+  },
+  "r012": {
+    "label_offset": true,
+    "offset_note": "证据句口径：第十二条（docs §7）；金标 num（行标签）：第一百四十四条。复核时注意证据「在合理生活消费需要范围内」落在解释第十二条。"
+  },
+  "r030": {
+    "label_offset": true,
+    "offset_note": "证据句口径：第一百二十二条（docs §7）；金标 num（行标签）：第一百二十七条。"
+  }
+}
