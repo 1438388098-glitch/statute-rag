@@ -113,7 +113,7 @@ v3 排名分布（真实 38 题，max_k=30）：第 1 名 7 题、2-5 名 5 题�
 
 ## 5. 已知不足与后续计划（按优先级）
 
-1. **真实金标扩容（38 → 200）**：民法典/刑法/刑诉法等已入库，此前因语料受限无法入金的选题可以进了；按 `scripts/build_real_gold.py` 流程逐题 LLM 核验 + 证据逐字校验 + 人工复核闭环。**这是当前最该做的一步**——38 题在老语料上已经饱和，越扩语料越测不准。
+1. **真实金标扩容（38 → 200）**：**部分完成（2026-10-02）**——新增 batch1 **37 题**（真实问句，来源百度知道/找法网，逐条 URL），证据逐字校验 37/37 通过，真实金标合计 **75 题**；另有 33 条真实候选写入 `gold/candidates_unverified.jsonl`（`verified:false`，明示未核验原因）待下一轮核验。本轮批次见 [gold/gold_real_v3_batch1.jsonl](../gold/gold_real_v3_batch1.jsonl) 与复核表 [gold-review-worksheet-v3-batch1.md](gold-review-worksheet-v3-batch1.md)。仍未到 200 题：本轮受「问句可核验 + 语料有条文可答」双重约束，能扩到 75 题；下一轮从候选池与更多来源继续。**这是当前最该做的一步**。
 2. **映射条号的口径确认**：31 部走回退通道的文书，「一、」/「N.」→「第X条」是依引用惯例做的映射，需法律专业确认是否可作为正式条号引用（`meta.num_origin` 已留痕）。
 3. **竹马 APP 端正文**：154 部 web 无正文里，23 部连 flk 都没有（行业准则、内部工作文件）；如这批内容确需入库，需另找来源（如各自发布机关官网）。
 4. **公报源污染行替换**（原计划 2）：治安管理处罚法、民诉法、公司法等公报双栏污染法，逐部用 flk 官方版本追加干净行。
@@ -146,6 +146,44 @@ python scripts/merge_corpus_v3.py --base data/corpus_v2.jsonl \
 
 # ── 4) 评测（本文件第 4 节数字来源）
 python scripts/gen_eval_report.py --corpus data/corpus_v3.jsonl
+
+# ── 5) 覆盖率复算（无需 data/ 也能跑：清单入库，语料本地只读）
+#    对账基准 corpus/zhuma_catalog_titles.json 由 --emit-titles 从本地竹马目录树提取后入库
+python scripts/coverage_report.py --corpus data/corpus_v3.jsonl \
+    --catalog corpus/zhuma_catalog_titles.json --md docs/coverage-report.md
+#    实测：语料 25273 条 / 432 部；竹马目录去重 242 部，已覆盖 219 部（90.5%），未覆盖 23 部；名同法不同源 1 部
+
+# ── 6) 逐行质检（不改语料，输出独立报告 + json）
+python scripts/corpus_audit.py --corpus data/corpus_v3.jsonl \
+    --md docs/corpus-audit.md --json data/flk/tmp/corpus_audit.json
+
+# ── 7) 真实金标批次（候选池 → 核验 → 金标；内置 38 题输出逐字节不变）
+python scripts/build_real_gold.py --corpus data/corpus_v3.jsonl \
+    --spec gold/gold_real_v3_batch1_spec.jsonl --qid-prefix v3 \
+    --out gold/gold_real_v3_batch1.jsonl --dropped /tmp/batch1_dropped.jsonl
+#    候选池（未核验，只留痕不进金标）：
+python scripts/build_real_gold.py --corpus data/corpus_v3.jsonl \
+    --spec gold/candidates_unverified.jsonl --out /tmp/cand_gold.jsonl
+#    复核工作表（可多批次合并）：
+python scripts/make_gold_review_worksheet.py --gold gold/gold_real_v3_batch1.jsonl \
+    --status gold/real_v3_batch1_review_status.json --out docs/gold-review-worksheet-v3-batch1.md
 ```
 
 （v2 的六部大法走 `scripts/docx_to_articles.py`，用法见该脚本 docstring。）
+
+## 7. v3 后的治理产物（2026-10-02）
+
+把「覆盖与质量」从文档里的一句话变成可复算、可审计、可交专业复核的东西：
+
+| 产物 | 文件 | 一句话 |
+|---|---|---|
+| 覆盖率可复算 | `scripts/coverage_report.py` + [coverage-report.md](coverage-report.md) | 219/242 = 90.5%，覆盖率此前只在本文档、竹马目录不入库；现在一条命令可复算 |
+| 逐行质检旗标 | `scripts/corpus_audit.py` + [corpus-audit.md](corpus-audit.md) | 六类旗标：疑似交错 5010、映射条号 506、重复条号 802、整篇一条 11、超长 4、空/超短 0；后两类整理成复核表 |
+| 缺口可追踪 | [../corpus/missing_laws.json](../corpus/missing_laws.json) | 仍未覆盖 23 部的法名/科目/判定依据/建议来源 |
+| 版本口径清点 | [../corpus/same_name_laws.json](../corpus/same_name_laws.json) | 跨来源同名 1 部、flk 非现行有效 4 条、v1 内部重复 401 组 |
+| 真实金标扩容 | [../gold/gold_real_v3_batch1.jsonl](../gold/gold_real_v3_batch1.jsonl) | 38 → 75 题（batch1 37 题，证据逐字校验 37/37） |
+| 进化提案 | [corpus-governance.md](corpus-governance.md) | 覆盖 → 质量 → 版本口径 → 金标代表性 的后续路线 |
+
+**重要提醒（诚实）**：`coverage_report` 的覆盖率、`corpus_audit` 的疑似交错旗标都是**可复算的推理**，不等于「已确证」：
+- 覆盖率的分母是竹马法考汇编目录（242 部），不是「全部法律」；未覆盖 23 部多为行业准则/内部工作文件，flk 本就不收。
+- `polluted-interleave` 是启发式风险带（公报源 + 公报排版标记 + 窄栏切片），**无法区分「窄栏但顺序正确」与「窄栏且串行交错」**；逐行是否真污染须人工对照官方文本。

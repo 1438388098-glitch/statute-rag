@@ -225,6 +225,56 @@ py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
 py -3.13 -m unittest discover -s tests
 ```
 
+## 12. v3 语料后的金标扩容（batch1，38 → 75 题，2026-10-02）
+
+v3 把民法典/刑法/刑诉法等补进语料后，此前因语料受限进不了金的选题可以进了。本轮加了真实金标 **batch1：37 题**（真实金标合计 **75 题**）。
+
+### 12.1 来源可达性侦察（结论：真实问句来源可达，法条站点仍需会话）
+
+| 站点 | 用途 | 可达性 | 说明 |
+|---|---|---|---|
+| 百度知道搜索页（`zhidao.baidu.com/search?word=`） | 真实问句标题 + 提问 URL | **可达** | 直接返回逐字标题与 `question/<id>.html` 链接 |
+| 找法网问答列表（`findlaw.cn/wenda/`） | 真实问句标题 + URL | **可达** | 逐条列出提问标题与 `wenda/q_<id>.html` 链接 |
+| 竹马 / flk 法条站点 | 抓法条正文 | 不可达（需浏览器会话/WAF） | 与语料采集期一致，本轮不抓 |
+
+### 12.2 batch1 构成与核验
+
+- **37 题**，来源：百度知道 30 题、找法网 7 题；逐条记录 `source_url`。
+- 覆盖 5 部法：民法典 18、劳动合同法 7、刑法（含修正案十一）8、劳动法 4。
+- 证据逐字校验：**37/37 通过、0 丢弃**（构建脚本强制 `evidence` 为金标行文本压缩空白后的子串）。
+- 金标行来源：全部落在 **v2 官方 docx 与 v3 flk 官方文件**，无 v1 公报源污染行（与 38 题金标不同）。
+- 剔除 2 题：「道路交通安全法关于酒驾醉驾的规定」等——问句指名《道路交通安全法》（行政罚），而语料只有《刑法》危险驾驶罪（刑责），**法域不匹配，宁可少而真**。
+- 另有 **33 条真实候选**写入 `gold/candidates_unverified.jsonl`（`verified:false` + 未核验原因：对应法律不在语料 / 治安管理处罚法行双栏污染 / 本轮未定位逐字证据），走同一条产线（0 进金标、33 条留痕），供下一轮核验。
+
+### 12.3 实测（v3 语料 25,273 条）
+
+| 金标 | 题数 | like R@5 | bm25 R@5 | hybrid R@5 | hybrid MRR |
+|---|---|---|---|---|---|
+| 老 38 题（v1 问句，v3 语料） | 38 | 0.0% | 31.6% | 31.6% | 0.232 |
+| **batch1（新，v3 语料）** | 37 | 0.0% | 16.2% | 16.2% | 0.162 |
+| **合计（38+batch1）** | **75** | 0.0% | 18.7% | **24.0%（18/75）** | 0.198 |
+
+**如实说明**：新增 batch1 的 R@5（16.2%）明显低于老 38 题（31.6%）。原因是 batch1 多为**长口语问句**（如「高空抛物会受到什么处罚民法典中有哪些相关规定」「解除劳动合同经济补偿的16种情形及补偿金核算公式」），且偏向民法典/刑法这类**条文密集、同法内部竞争激烈**的大法——这正是重排/语义通道要解决的工作面，不代表语料或算法退步。两个批次的分项数字都如实并列，不合并成单一「好看」的数字。
+
+### 12.4 为什么没到 200
+
+本轮的真实约束是「**问句可核验（有真实 URL，问句逐字可引）**」与「**语料有某条文可确定回答**」的双重交集，且金标映射必须逐条找到**逐字证据**。能扩到 75 题（+37）是可核验的成果；33 条候选受限于「对应法律不在语料（如道路交通安全法、个人所得税法、义务教育法、社会保险法）」，不是不想做，是做了就假。下一轮：补这些法入语料 / 继续从候选池与更多来源核验。
+
+### 12.5 复现
+
+```bash
+# 构建 batch1（需自备 data/corpus_v3.jsonl；语料不入仓库）
+python scripts/build_real_gold.py --corpus data/corpus_v3.jsonl \
+    --spec gold/gold_real_v3_batch1_spec.jsonl --qid-prefix v3 \
+    --out gold/gold_real_v3_batch1.jsonl --dropped /tmp/batch1_dropped.jsonl
+# 合计 75 题评测
+python scripts/run_eval.py --corpus data/corpus_v3.jsonl \
+    --gold /tmp/gold_real_75.jsonl --out-dir data   # 75 = 38 + batch1 拼接
+# 复核工作表
+python scripts/make_gold_review_worksheet.py --gold gold/gold_real_v3_batch1.jsonl \
+    --status gold/real_v3_batch1_review_status.json --out docs/gold-review-worksheet-v3-batch1.md
+```
+
 ## English summary
 
 We built a **real-question gold set v1 (38 questions)** sourced from genuine legal Q&A posts on Baidu Zhidao (URLs recorded per question). Each question is mapped by an LLM to 1-3 corpus rows whose text verifiably contains an evidence sentence answering the question (substring check enforced by script); **human legal review is still pending**. Queries are the raw colloquial questions, sent to the retrievers unchanged.
