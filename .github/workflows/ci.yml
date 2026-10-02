@@ -64,9 +64,17 @@ jobs:
           print('demo gate OK:', rows[0].strip())
           "
 
-      - name: 写 step summary（文档口径提示，非断言）
+      - name: 写 step summary（从 docs/metrics.json 取值，避免硬编码随口径漂移）
         run: |
           {
             echo "demo gate: hybrid Recall@5 = 100.0%（合成演示语料，仅验证管线端到端可用）"
-            echo "current scope (v3 corpus, 25,273 articles): real-gold hybrid R@5=44.7%, R@30=81.6%; synthetic R@5=97.2% (see docs/eval_report.md)"
+            python -c "
+          import io, json
+          m = json.load(io.open('docs/metrics.json', encoding='utf-8'))
+          g = m['generated']
+          print('current scope: corpus %s articles; real-gold hybrid R@5=%s R@30=%s MRR@5=%s; synthetic R@5=%s (see docs/eval_report.md, generated %s @ %s)'
+                % ('{:,}'.format(g['corpus_size']), m['real']['hybrid']['recall_at_5_display'],
+                   m['real_deep_display']['R@30'], m['real']['hybrid']['mrr_display'],
+                   m['synth']['hybrid']['recall_at_5_display'], g['date'], g['commit']))
+          "
           } >> "$GITHUB_STEP_SUMMARY"

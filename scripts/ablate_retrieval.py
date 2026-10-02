@@ -12,9 +12,16 @@
       --corpus v2=../statute-rag/data/corpus_v2.jsonl \
       --corpus v3=../statute-rag/data/corpus_v3.jsonl --ks 5,10,20,30
 
-  # 参数全表（诊断文档 §5.1 / §5.2 的原始输出）
-  python scripts/ablate_retrieval.py --corpus v3=... --b-scan
+  # 参数全表（诊断文档 §5.1 / §5.2 的原始输出，逐格对应）
+  #   §5.1 的 b 网格固定 w=1.0（对照组），故需显式传 --expansion-weight 1.0；
+  #   §5.2 的权重网格固定 b=0.6（模块默认值），无需额外开关。
+  python scripts/ablate_retrieval.py --corpus v3=... --b-scan --expansion-weight 1.0
   python scripts/ablate_retrieval.py --corpus v3=... --weight-scan
+
+扫描点位与固定条件（与诊断文档表格逐格对齐，改点位即改文档）：
+  --b-scan       扫描 BM25_B，点位 B_SCAN；扩展通道权重固定为 --expansion-weight
+                 给出的值（缺省即模块当前值 2.5）
+  --weight-scan  扫描扩展通道权重，点位 WEIGHT_SCAN；BM25_B 固定为模块当前值 0.6
 
 消融维度（均为通用机制参数，非按题调参）：
   A0 基线（use_expansion=False）—— 与改进前完全一致；
@@ -43,7 +50,9 @@ if hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 DEFAULT_CORPUS = "data/corpus.jsonl"
-B_SCAN = (0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.9)
+# 点位与 docs/retrieval-v3-diagnosis.md §5.1 的表体逐行一致（b 网格，w 固定 1.0）
+B_SCAN = (0.75, 0.72, 0.70, 0.68, 0.65, 0.60, 0.50, 0.00)
+# 点位与同文 §5.2 的表体逐行一致（扩展通道权重网格，b 固定 0.6）
 WEIGHT_SCAN = (1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0)
 
 
@@ -80,16 +89,24 @@ def run_config(corpus, gold_real, gold_synth, ks, retriever):
 def main():
     parser = argparse.ArgumentParser(description="检索改进消融测量")
     parser.add_argument("--corpus", action="append", default=None,
-                        metavar="[LABEL=]PATH",
-                        help="语料 JSONL，可重复以并列多云料；缺省 data/corpus.jsonl")
+                        metavar="CORPUS",
+                        help="语料 JSONL，可重复以并列多云料；写法 \"PATH\" 或 \"LABEL=PATH\"（LABEL 用于并列展示）；缺省 data/corpus.jsonl")
     parser.add_argument("--gold-real", default="gold/gold_real_38.jsonl")
     parser.add_argument("--gold-synth", default="gold/gold_synth_seed20260918.jsonl")
     parser.add_argument("--ks", default="5", help="逗号分隔的 k 列表，如 5,10,20,30")
     parser.add_argument("--b-scan", action="store_true",
-                        help="扫描 BM25_B 全表（真实多 k + 合成 R@5）")
+                        help="扫描 BM25_B 全表（真实多 k + 合成 R@5/MRR@5）")
     parser.add_argument("--weight-scan", action="store_true",
-                        help="扫描扩展查询通道权重全表（真实多 k + 合成 R@5）")
+                        help="扫描扩展查询通道权重全表（真实多 k + 合成 R@5/MRR@5）")
+    parser.add_argument("--expansion-weight", type=float, default=None,
+                        metavar="W",
+                        help="固定扩展查询通道权重（覆盖模块默认值）；"
+                             "--b-scan 复现 §5.1 时须传 1.0")
     args = parser.parse_args()
+
+    if args.b_scan and args.weight_scan:
+        parser.error("--b-scan 与 --weight-scan 互斥：一次只扫一个参数，"
+                     "否则固定条件不同、结果无法归因")
 
     ks = tuple(int(x) for x in args.ks.split(",") if x.strip())
     if 5 not in ks:
@@ -98,19 +115,22 @@ def main():
     gold_real = load_jsonl(args.gold_real)
     gold_synth = load_jsonl(args.gold_synth)
 
+    if args.expansion_weight is not None:
+        retrieval.EXPANSION_CHANNEL_WEIGHT = args.expansion_weight
+
     for label, path in corpora:
         corpus = load_jsonl(path)
-        print("== 语料 %s：%d 条（%s）；k=%s ==" % (label, len(corpus), path, list(ks)))
+        print("== 语料 %s：%d 条（%s）；k=%s；固定条件：BM25_B=%s，扩展通道权重=%s =="
+              % (label, len(corpus), path, list(ks),
+                 retrieval.BM25_B, retrieval.EXPANSION_CHANNEL_WEIGHT))
         if args.b_scan or args.weight_scan:
             orig_b, orig_w = retrieval.BM25_B, retrieval.EXPANSION_CHANNEL_WEIGHT
-            scan = (("BM25_B", B_SCAN, "b") if args.b_scan
-                    else ("扩展通道权重", WEIGHT_SCAN, "w"))
-            name, values, _kind = scan
+            if args.b_scan:
+                name, values, attr = "BM25_B", B_SCAN, "BM25_B"
+            else:
+                name, values, attr = "扩展通道权重", WEIGHT_SCAN, "EXPANSION_CHANNEL_WEIGHT"
             for value in values:
-                if args.b_scan:
-                    retrieval.BM25_B = value
-                else:
-                    retrieval.EXPANSION_CHANNEL_WEIGHT = value
+                setattr(retrieval, attr, value)
                 print("  %s=%-5s %s" % (name, value,
                                         run_config(corpus, gold_real, gold_synth, ks,
                                                    HybridRetriever(corpus))))

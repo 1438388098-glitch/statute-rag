@@ -40,6 +40,15 @@ REAL_GOLD = os.path.join("gold", "gold_real_38.jsonl")
 
 DEEP_KS = (5, 10, 20, 30)
 
+# 头条数字的噪声限定（审查要求 M3）：与两份 README 同段同义。
+# 写成常量是为了让它同时进 docs/eval_report.md 与 docs/metrics.json，
+# 避免「报告里有、机器可读口径里没有」的半截声明。
+REAL_R5_NOTE = (
+    "噪声限定：真实 R@5 的最后 2.6pt（扩展通道权重 w 2.0→2.5）只等于 1 道题的"
+    "名次交换，落在 38 题的量化噪声内（1 题 = 2.6pt）；跨权重稳定、三版语料"
+    "一致的硬结论是 R@30（v3 73.7%→81.6%）。"
+)
+
 
 def _data_ref(raw, label=None):
     """报告里的复现命令用维护者约定目录 `data/<文件名>`，不泄漏本机绝对路径。"""
@@ -91,8 +100,11 @@ def main():
                         help="真实语料 JSONL（不入仓库，维护者本地提供）")
     parser.add_argument("--corpus-label", default=None,
                         help="并列表里当前语料的展示名（缺省取文件名）")
-    parser.add_argument("--history", action="append", default=None, metavar="[LABEL=]PATH",
-                        help="历史口径语料，可重复；仅在报告中追加并列表，不进 metrics.json")
+    parser.add_argument("--scope-note", default=None,
+                        help="报告头部「当前口径语料」后的口径说明（缺省为通用措辞，"
+                             "换语料时不应残留上一次的说明）")
+    parser.add_argument("--history", action="append", default=None, metavar="CORPUS",
+                        help="历史口径语料，可重复；写法 \"PATH\" 或 \"LABEL=PATH\"；仅在报告中追加并列表，不进 metrics.json")
     parser.add_argument("--out-doc", default="docs/eval_report.md")
     parser.add_argument("--out-metrics", default="docs/metrics.json")
     args = parser.parse_args()
@@ -138,12 +150,13 @@ def main():
                 for k in DEEP_KS)
             metrics["real_hybrid_rank_histogram"] = hist
     report_parts.append(
-        "## 深度口径（真实问句；同一份 depth=30 排名截取各 k，跨 k 可比）\n\n%s\n"
-        % _deep_table(deep_rows))
+        "## 深度口径（真实问句；同一份 depth=30 排名截取各 k，跨 k 可比）\n\n%s\n\n> %s\n"
+        % (_deep_table(deep_rows), REAL_R5_NOTE))
     report_parts.append(
         "### hybrid 排名分布（真实问句，max_k=30）\n\n"
         + "，".join("%s：%d 题" % (label, n) for label, n in hist.items())
         + "\n\n未进前 30 的题属词法/语料层失败，重排救不了；6-30 名的题是 v0.2 重排通道的工作面。")
+    metrics["recall_at_5_note"] = REAL_R5_NOTE
 
     # 历史口径并列（--history）：同一份代码在不同语料上的口径变化，只进报告
     if args.history:
@@ -170,15 +183,19 @@ def main():
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     repro = "python scripts/gen_eval_report.py --corpus %s" % _data_ref(args.corpus)
+    if args.corpus_label:
+        repro += " --corpus-label %s" % args.corpus_label
     if args.history:
         repro += " " + " ".join("--history %s" % _data_ref(h) for h in args.history)
+    if args.scope_note:
+        repro += ' --scope-note "%s"' % args.scope_note
+    scope = args.scope_note or "（口径说明见文末并列表）"
     header = "\n".join([
         "# 评测报告",
         "",
         "> **本文件由 `scripts/gen_eval_report.py` 生成（需维护者本地语料），勿手改；**",
         "> 数字单一来源是 [docs/metrics.json](metrics.json)，CI 校验两份 README 与之一致。",
-        "> **当前口径语料：%s 条**（v3 法条补全后；v1/v2 为历史口径，见文末并列表）。"
-        % "{:,}".format(len(corpus)),
+        "> **当前口径语料：%s 条**%s" % ("{:,}".format(len(corpus)), scope),
         "> 生成于 %s，commit `%s`。" % (now, commit),
         "> 复现：`%s`" % repro,
         "",
