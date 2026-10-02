@@ -17,11 +17,11 @@
 | 项 | 产物 | 复算命令 | 关键数字（v3 实跑） |
 |---|---|---|---|
 | 覆盖率可复算 | `scripts/coverage_report.py`、`corpus/zhuma_catalog_titles.json`、[coverage-report.md](coverage-report.md) | `python scripts/coverage_report.py --corpus data/corpus_v3.jsonl --catalog corpus/zhuma_catalog_titles.json --md docs/coverage-report.md` | 219/242 = **90.5%**，未覆盖 23 |
-| 逐行质检旗标 | `scripts/corpus_audit.py`、[corpus-audit.md](corpus-audit.md) | `python scripts/corpus_audit.py --corpus data/corpus_v3.jsonl --md docs/corpus-audit.md --json <json>` | 疑似交错 5010、映射条号 506、重复条号 802、整篇一条 11、超长 4、空/超短 0 |
+| 逐行质检旗标 | `scripts/corpus_audit.py`、[corpus-audit.md](corpus-audit.md) | `python scripts/corpus_audit.py --corpus data/corpus_v3.jsonl --md docs/corpus-audit.md --json <json>` | 疑似交错两带：5010（有排版标记）+ 2193（无标记，低置信）= 7203（v1 公报源窄栏行数）；映射条号 506、重复条号 802、整篇一条 11、超长 4、空/超短 0 |
 | 缺口可追踪 | `corpus/missing_laws.json` | 由 `flk_missed.json` + 目录科目交叉生成（见文件 `_derivation`） | 23 部，均无竹马正文且 flk 检索 0 命中 |
-| 版本口径清点 | `corpus/same_name_laws.json` | 由语料 × `flk_manifest_a.json`/`flk_matched.json` 实算 | 跨来源同名 1 部；flk 非现行有效 4 条；v1 内部重复 401 组 |
+| 版本口径清点 | `corpus/same_name_laws.json` | 由语料 × `flk_manifest_a.json`/`flk_matched.json` 实算 | 跨来源同名 1 部；flk 非现行/状态未知 4 条（已修改 2 + 状态未知 2）；v1 内部重复 401 组 |
 | 真实金标扩容 | `gold/gold_real_v3_batch1.jsonl`、`gold/candidates_unverified.jsonl`、[gold-review-worksheet-v3-batch1.md](gold-review-worksheet-v3-batch1.md) | 见 [real-question-eval.md](real-question-eval.md) §12.5 | 38 → **75** 题；候选 33 条（未核验） |
-| 覆盖率/质检测试 | `tests/test_coverage_report.py`、`tests/test_corpus_audit.py`、`tests/test_build_real_gold.py` | `python -m unittest discover -s tests` | 62 → 103 通过 |
+| 覆盖率/质检测试 | `tests/test_coverage_report.py`、`tests/test_corpus_audit.py`、`tests/test_build_real_gold.py` | `python -m unittest discover -s tests` | 语料线本批新增 41 例（coverage 13 / audit 18 / build 10）；与检索线合并后全套 **119** 例通过 |
 
 **纪律**：本轮**不改语料文件、不产 v4**；既有行字节冻结、id 不变（真实金标绑定这些 id）。所有语料内容层面的变更只写提案（下文 §3）。
 
@@ -31,9 +31,9 @@
 
 | 提案 | 为什么没做 | 下一步 |
 |---|---|---|
-| **公报源污染行替换**（治安管理处罚法、民诉法、公司法等，疑似交错 5010 行） | `polluted-interleave` 是启发式风险带，**无法区分「窄栏但顺序正确」与「窄栏且串行交错」**；在没人工确证前替换会引入新错误 | 人工取 `corpus-audit.md` 的疑似清单，对照官方文本逐法确证；确证后用 flk 官方版本按 append-only 追加干净行，老行标 `superseded`（不删，保住金标 id） |
+| **公报源污染行替换**（治安管理处罚法、民诉法、公司法等，疑似交错**两带** 5010 + 2193 = 7203 行） | 两带都是启发式风险带：`polluted-interleave`（有排版标记）精度较高，`narrow-no-furniture`（无标记）低置信、抽检含真交错也含窄栏顺序正确者，**均无法只凭窄栏判定**；在没人工确证前替换会引入新错误 | 人工取 `corpus-audit.md` 的两带清单 + 抽样核对表，对照官方文本逐法确证；确证后用 flk 官方版本按 append-only 追加干净行，老行标 `superseded`（不删，保住金标 id） |
 | **v1 内部重复 (law,num) 401 组**（企业所得税法实施条例 264 行等） | 未确证是同法两版本、附件还是解析重复 | 先人工判定重复成因，再决定保留/折叠；牵扯金标 id 的须谨慎 |
-| **flk 非现行有效版本补齐**（sxx=2 的 2 条） | 需回 flk 核实是否有更新版本未入库 | 逐条回查；若有，按 append-only 追加新版本并在 `meta` 标 `effective`/`gbrq` |
+| **flk 非现行/状态未知版本补齐**（sxx=2 已修改 2 条 + sxx=null 状态未知 2 条） | 需回 flk 核实是否有更新版本未入库；决定类无施行状态字段，现行性未知 | 逐条回查；已修改者按 append-only 追加新版本并在 `meta` 标 `effective`/`gbrq`；决定类先人工确认现行状态 |
 | **缺口 23 部补入** | 需发布机关官网来源，外抓要浏览器会话/WAF，subagent 拿不到 | 维护者用浏览器会话按 `missing_laws.json` 的 `suggested_source` 逐部取源 |
 
 ### 2.2 映射条号口径确认（原 §5 第 2 条）
@@ -57,7 +57,7 @@
 |---|---|---|---|
 | 重复条号 dup-law-num | [corpus-audit.md](corpus-audit.md) §交专业复核一 | 802 行（法名/条号/来源/行 id） | 是否同法两版本/附件/解析重复，机器判不了 |
 | 回退映射 num-mapped | [corpus-audit.md](corpus-audit.md) §交专业复核二 | 506 行（法名/映射后条号/原文标记/行 id） | 「一、」「N.」能否当正式条号引用，需法律判断 |
-| 疑似交错 polluted-interleave | [corpus-audit.md](corpus-audit.md) §疑似双栏交错 | 按法 top 20（共 5010 行） | 启发式不能区分「窄栏顺序正确」与「交错」 |
+| 疑似交错 polluted-interleave | [corpus-audit.md](corpus-audit.md) §疑似双栏交错 | 主风险带按法 top 20（有标记，5010 行）+ 第二带 2193 行（无标记，低置信） | 启发式不能区分「窄栏顺序正确」与「交错」；且 5010 不是上限 |
 
 **现状缺口**：以上三表目前**尚无指定复核人**。建议在项目内明确一名法律专业复核人；金标复核状态持久化在 `gold/*_review_status.json`，重复生成工作表不丢结果。
 

@@ -60,7 +60,9 @@
   "v1_internal_duplicate_laws_note": "v1 公报源内部另有 401 组同 (law, num) 重复行（多集中在国务院条例），见 docs/corpus-audit.md 的 dup-law-num 表。",
   "recommendation": [
     "跨来源同名：flk 官方版本为权威（取公布日期最新者），v1 公报源同法行标为 superseded，检索层按 meta 折叠或降权（检索实现归检索线）。",
-    "flk 非现行有效（sxx=2）：核实是否有更新版本未入库；若有，按 append-only 追加新版本行并在 meta 标 effective/gbrq。",
+    "flk 非现行/状态未知 4 条（已修改 2 + 状态未知 2）：逐条核实是否有更新版本未入库；已修改者按 append-only 追加新版本行并在 meta 标 effective/gbrq；决定类 null 先人工确认现行状态。",
     "v1 内部重复 (law,num)：先人工确认是否为同法两版本/两个附件，再决定保留或折叠。"
-  ]
+  ],
+  "flk_noncurrent_count": 4,
+  "flk_noncurrent_note": "非现行/状态未知 4 条：其中 sxx=2（已修改）2 条；sxx=null（决定类，flk 无施行状态字段，状态未知）2 条。"
 }
