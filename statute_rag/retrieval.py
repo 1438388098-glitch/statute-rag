@@ -188,11 +188,16 @@ class HybridRetriever(object):
     恒用 depth=30（v0.1.1 全部已发布数字的口径，逐位不变）；跨 k 的可比
     排名（Recall@5/10/20/30）走 recall(query, depth) 取完整融合排名后截取，
     见 eval_harness.evaluate_multi_k。仅当 k 超过该深度时才临时加深通道喂饱 k。
+
+    重排通道（v0.2，接口见 interfaces.py）：reranker=None 时与 v0.1.1 完全
+    一致；传入实现 rerank(query, citations, k) 的重排器后，recall 返回重排
+    视图——重排只动顺序不动 Citation 形状，语义依赖不得进入核心 import 链。
     """
 
-    def __init__(self, corpus, use_expansion=True, synonyms=None):
+    def __init__(self, corpus, use_expansion=True, synonyms=None, reranker=None):
         self.bm25 = BM25Retriever(corpus)
         self.like = LikeRetriever(corpus)
+        self._reranker = reranker
         self._synonyms = (synonyms if synonyms is not None
                           else load_synonyms()) if use_expansion else None
 
@@ -212,7 +217,10 @@ class HybridRetriever(object):
         什么」，截断位置决定「呈现多少」，两者混在 search(k) 里会让
         Recall@k 各点变成不同检索配置下的数字。
         """
-        return rrf_fuse(self._channels(query, depth), k=None)
+        ranking = rrf_fuse(self._channels(query, depth), k=None)
+        if self._reranker is not None:
+            ranking = self._reranker.rerank(query, ranking, k=len(ranking))
+        return ranking
 
     def search(self, query, k=5):
         return self.recall(query, depth=max(HYBRID_FUSION_DEPTH, k))[:k]
