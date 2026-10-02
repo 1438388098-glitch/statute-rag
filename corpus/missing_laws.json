@@ -1,0 +1,215 @@
+{
+  "_readme": "竹马法考汇编目录 242 部中，语料 v3 仍未覆盖的 23 部（公开事实清单：法名 + 科目 + 判定依据 + 建议来源，不含任何条文正文）。",
+  "_derivation": "由 data/flk/tmp/flk_missed.json（flk 逐部检索 0 命中记录，nsearch=检索式数、ncand=候选数）与 data/flk/tmp/zhuma_catalog.json（取科目）交叉生成；与 scripts/coverage_report.py 的未覆盖清单（23 部）一致。",
+  "_note": "这些法多属行业职业道德准则、香港基本法附件、两高/部门内部工作文件（指导意见/规程/通知），flk.npc.gov.cn 本就不收录；如需入语料须另找发布机关官网来源（本轮不外抓，两个站点均需浏览器会话/WAF）。",
+  "count": 23,
+  "laws": [
+    {
+      "title": "中华人民共和国香港特别行政区基本法附件一香港特别行政区行政长官的产生办法",
+      "zhuma_id": 1179,
+      "subject": "宪法",
+      "nsearch": 1,
+      "ncand": 0,
+      "reason": "香港基本法附件，flk 只收录基本法正文与相关批准决定，附件不在库",
+      "suggested_source": "全国人民代表大会官网（基本法全文附件）"
+    },
+    {
+      "title": "中华人民共和国香港特别行政区基本法附件二香港特别行政区立法会的产生办法和表决程序",
+      "zhuma_id": 1180,
+      "subject": "宪法",
+      "nsearch": 1,
+      "ncand": 0,
+      "reason": "香港基本法附件，flk 只收录基本法正文与相关批准决定，附件不在库",
+      "suggested_source": "全国人民代表大会官网（基本法全文附件）"
+    },
+    {
+      "title": "中华人民共和国检察官职业道德基本准则",
+      "zhuma_id": 1262,
+      "subject": "司法制度和法律职业道德",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "行业职业道德规范，非法律法规；flk 只收法律法规与人大决定",
+      "suggested_source": "发布机关官网（最高人民检察院、司法部、全国律协/中国公证协会）"
+    },
+    {
+      "title": "律师职业道德基本准则",
+      "zhuma_id": 1297,
+      "subject": "司法制度和法律职业道德",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "行业职业道德规范，非法律法规；flk 只收法律法规与人大决定",
+      "suggested_source": "发布机关官网（最高人民检察院、司法部、全国律协/中国公证协会）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、司法部关于刑事诉讼法律援助工作的规定",
+      "zhuma_id": 1324,
+      "subject": "司法制度和法律职业道德",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门规定/工作规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "公证员职业道德基本准则",
+      "zhuma_id": 1348,
+      "subject": "司法制度和法律职业道德",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "行业职业道德规范，非法律法规；flk 只收法律法规与人大决定",
+      "suggested_source": "发布机关官网（最高人民检察院、司法部、全国律协/中国公证协会）"
+    },
+    {
+      "title": "最高人民法院关于处理自首和立功若干具体问题的意见",
+      "zhuma_id": 1409,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "两高或部门工作意见，flk 不收录",
+      "suggested_source": "发布机关官网（最高法/最高检）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、司法部关于办理黑恶势力犯罪案件若干问题的指导意见",
+      "zhuma_id": 2271,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "两高或部门联合指导意见，属工作指导文件，非司法解释，flk 不收录",
+      "suggested_source": "最高人民法院/最高人民检察院官网、发布机关官网"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理组织考试作弊等刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1422,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "司法解释，flk 逐部精确/模糊检索均未命中（库未收录该文本）",
+      "suggested_source": "最高人民法院官网"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理窝藏、包庇刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2323,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "司法解释，flk 逐部精确/模糊检索均未命中（库未收录该文本）",
+      "suggested_source": "最高人民法院官网"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理受贿刑事案件适用法律若干问题的意见",
+      "zhuma_id": 1434,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "两高或部门工作意见，flk 不收录",
+      "suggested_source": "发布机关官网（最高法/最高检）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理贪污贿赂刑事案件适用法律若干问题的解释（二）",
+      "zhuma_id": 2343,
+      "subject": "刑法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "司法解释，flk 逐部精确/模糊检索均未命中（库未收录该文本）",
+      "suggested_source": "最高人民法院官网"
+    },
+    {
+      "title": "最高人民法院关于人民法院执行《中华人民共和国国家赔偿法》几个问题的解释",
+      "zhuma_id": 1794,
+      "subject": "行政法与行政诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "司法解释，flk 逐部精确/模糊检索均未命中（库未收录该文本）",
+      "suggested_source": "最高人民法院官网"
+    },
+    {
+      "title": "最高人民法院关于办理死刑复核案件听取辩护律师意见的办法",
+      "zhuma_id": 1591,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门办法/暂行办法，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "最高人民法院关于刑事再审案件开庭审理程序的具体规定（试行）",
+      "zhuma_id": 1595,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "试行规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "人民检察院办理减刑、假释案件规定",
+      "zhuma_id": 1598,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门规定/工作规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "人民检察院、公安机关羁押必要性审查、评估工作规定",
+      "zhuma_id": 2246,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门规定/工作规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部关于依法保障律师执业权利的规定",
+      "zhuma_id": 1570,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门规定/工作规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部关于规范量刑程序若干问题的意见",
+      "zhuma_id": 1590,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "两高或部门工作意见，flk 不收录",
+      "suggested_source": "发布机关官网（最高法/最高检）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部办理刑事案件排除非法证据规程",
+      "zhuma_id": 2297,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门办案规程（内部工作文件），flk 不收录",
+      "suggested_source": "发布机关官网（最高法/最高检/公安部/司法部）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院公安部、国家安全部、司法部办理刑事案件庭前会议规程",
+      "zhuma_id": 2299,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "部门办案规程（内部工作文件），flk 不收录",
+      "suggested_source": "发布机关官网（最高法/最高检/公安部/司法部）"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、中国海警局关于海上刑事案件管辖等有关问题的通知",
+      "zhuma_id": 1606,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "两高或部门通知（工作文件），flk 不收录",
+      "suggested_source": "发布机关官网（两高/中国海警局）"
+    },
+    {
+      "title": "最高人民法院　司法部关于为死刑复核案件被告人依法提供法律援助的规定（试行）",
+      "zhuma_id": 2324,
+      "subject": "刑事诉讼法",
+      "nsearch": 20,
+      "ncand": 0,
+      "reason": "试行规定，flk 未收录",
+      "suggested_source": "发布机关官网"
+    }
+  ]
+}
