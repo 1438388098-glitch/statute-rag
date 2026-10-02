@@ -39,7 +39,7 @@ python scripts/search_cli.py --corpus demo_corpus/corpus.jsonl "台账公示" --
 
 **深度召回曲线**（固定 depth=30 的同一份排名逐 k 截取，跨 k 可比）：真实问句上 hybrid **Recall@10 52.6% → Recall@20 68.4% → Recall@30 81.6%**。38 题里 7 题未进 top-30（纯语义等价或同法页块冗余），14 题在 6-30 名内（v0.2 重排通道的工作面）。逐 k 表与排名分布见 [docs/eval_report.md](docs/eval_report.md)——由 `scripts/gen_eval_report.py` 生成，[docs/metrics.json](docs/metrics.json) 是数字的单一来源（CI 校验两份 README 与之一致）。
 
-**历史口径（语料未补全时，勿与上表混读）**：
+**三版语料并列（当前 + 历史口径；勿与上表混读）**：
 
 | 语料 | 条数 | hybrid 真实 R@5 | 真实 MRR@5 | 真实 R@10 | 真实 R@30 | 合成 R@5 |
 |---|---|---|---|---|---|---|
