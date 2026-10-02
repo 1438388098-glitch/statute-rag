@@ -92,6 +92,36 @@ class PollutedInterleaveTest(unittest.TestCase):
         self.assertNotIn("polluted-interleave", flags_of(r))
 
 
+class NarrowNoFurnitureTest(unittest.TestCase):
+    """第二风险带（低置信）：公报源 + 窄栏 + 无排版标记。"""
+
+    NARROW = u"短句一 短句二 短句三 短句四 短句五 短句六"
+
+    def test_narrow_without_furniture_flagged(self):
+        f = flags_of(row(rid=1, text=self.NARROW))
+        self.assertIn("narrow-no-furniture", f)
+        self.assertNotIn("polluted-interleave", f)
+
+    def test_narrow_with_furniture_is_main_band(self):
+        text = u"全国人民代表大会常务委员会公报 " + self.NARROW
+        f = flags_of(row(rid=1, text=text))
+        self.assertIn("polluted-interleave", f)
+        self.assertNotIn("narrow-no-furniture", f)
+
+    def test_wide_without_furniture_neither(self):
+        wide = u"这是很长的连续句子其长度明显超过窄栏阈值" * 3
+        f = flags_of(row(rid=1, text=wide))
+        self.assertNotIn("narrow-no-furniture", f)
+        self.assertNotIn("polluted-interleave", f)
+
+    def test_two_bands_are_disjoint(self):
+        rows = [row(rid=1, text=self.NARROW),
+                row(rid=2, text=u"全国人民代表大会常务委员会公报 " + self.NARROW)]
+        rep = audit(rows)
+        self.assertEqual(rep["flag_counts"].get("polluted-interleave"), 1)
+        self.assertEqual(rep["flag_counts"].get("narrow-no-furniture"), 1)
+
+
 class AuditAggregationTest(unittest.TestCase):
     def test_counts_and_review_lists(self):
         rows = [

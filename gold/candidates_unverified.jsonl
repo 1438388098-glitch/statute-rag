@@ -31,3 +31,5 @@
 {"question": "邻居频繁敲门过来串门怎么办", "url": "https://www.findlaw.cn/wenda/q_61409075.html", "source_site": "找法网", "verified": false, "unverified_reason": "语料可能有对应条文，但本轮未逐题定位到逐字证据，留待下一轮核验"}
 {"question": "中公教育不过退费靠谱不", "url": "https://www.findlaw.cn/wenda/q_61409070.html", "source_site": "找法网", "verified": false, "unverified_reason": "语料可能有对应条文，但本轮未逐题定位到逐字证据，留待下一轮核验"}
 {"question": "银行钱还不上怎么办?", "url": "https://www.findlaw.cn/wenda/q_61409069.html", "source_site": "找法网", "verified": false, "unverified_reason": "语料可能有对应条文，但本轮未逐题定位到逐字证据，留待下一轮核验"}
+{"question": "道路交通安全法关于酒驾醉驾的规定", "url": "http://zhidao.baidu.com/question/634868283436325484.html", "source_site": "百度知道", "verified": false, "unverified_reason": "法域不匹配：问句指名《道路交通安全法》（行政罚：暂扣/吊销驾驶证），该法不在语料；语料只有《刑法》第一百三十三条之一危险驾驶罪（刑责），映射过去即错，故剔除"}
+{"question": "道路交通安全法酒驾醉驾标准规定有哪些", "url": "http://zhidao.baidu.com/question/1959331120793980908.html", "source_site": "百度知道", "verified": false, "unverified_reason": "法域不匹配：《道路交通安全法》不在语料，语料仅有《刑法》危险驾驶罪条款，不能替代回答"}

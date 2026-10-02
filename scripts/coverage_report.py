@@ -198,6 +198,18 @@ def format_markdown(rep):
         lines.append(u"| 未覆盖部数 | **%d** |" % cov["uncovered"])
         lines.append(u"| 覆盖率 | **%.1f%%** |" % cov["rate"])
     lines.append(u"")
+    if cov is not None:
+        lines.append(u"## 部数口径（分母怎么来的）")
+        lines.append(u"")
+        lines.append(u"- 竹马目录树法律节点：**%d** 个；" % cov["nodes"])
+        lines.append(u"- 按**标题字符串**去重 = **%d** 部（本报告分母，与 docs/corpus-completion.md 一致）；"
+                     u"覆盖 %d 部。" % (cov["unique_titles"], cov["covered"]))
+        if cov.get("duplicate_titles"):
+            lines.append(u"- 按**归一化法名**（去空白 + 去「中华人民共和国」前缀）去重会再合并以下同法变体，"
+                         u"故归一化口径部数更少（仅影响分母，不影响覆盖率四舍五入）：")
+            for d in cov["duplicate_titles"]:
+                lines.append(u"  - `%s`（%s）" % (d["name"], u" ／ ".join(d["titles"])))
+        lines.append(u"")
     lines.append(u"## 按来源分组")
     lines.append(u"")
     lines.append(u"| 来源 | 条数 | 部数 |")
