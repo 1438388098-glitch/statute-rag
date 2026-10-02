@@ -1,0 +1,1474 @@
+{
+  "_readme": "竹马（zhumavip.com）法考法律法规汇编 businessTypeId=104 的法律名称清单，仅含公开事实（法名 + 竹马目录 id + 所属科目 + 是否有正文节点），不含任何条文正文。由 scripts/coverage_report.py --emit-titles 生成。",
+  "source": "zhumavip.com 法考法律法规汇编（businessTypeId=104）",
+  "subjects": [
+    "宪法",
+    "司法制度和法律职业道德",
+    "民法",
+    "刑法",
+    "行政法与行政诉讼法",
+    "民事诉讼法与仲裁制度",
+    "刑事诉讼法",
+    "商法"
+  ],
+  "laws": [
+    {
+      "title": "中华人民共和国宪法",
+      "zhuma_id": 1081,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "反分裂国家法",
+      "zhuma_id": 1087,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国国家安全法",
+      "zhuma_id": 1088,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国立法法",
+      "zhuma_id": 1096,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国全国人民代表大会和地方各级人民代表大会选举法",
+      "zhuma_id": 1103,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国全国人民代表大会和地方各级人民代表大会代表法",
+      "zhuma_id": 1116,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国全国人民代表大会组织法",
+      "zhuma_id": 1123,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国国务院组织法",
+      "zhuma_id": 1129,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国监察法",
+      "zhuma_id": 1130,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国地方各级人民代表大会和地方各级人民政府组织法",
+      "zhuma_id": 1140,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国各级人民代表大会常务委员会监督法",
+      "zhuma_id": 1146,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国民族区域自治法",
+      "zhuma_id": 1156,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国香港特别行政区基本法",
+      "zhuma_id": 1165,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国香港特别行政区基本法附件一香港特别行政区行政长官的产生办法",
+      "zhuma_id": 1179,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国香港特别行政区基本法附件二香港特别行政区立法会的产生办法和表决程序",
+      "zhuma_id": 1180,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会关于建立健全香港特别行政区维护国家安全的法律制度和执行机制的决定",
+      "zhuma_id": 1181,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国香港特别行政区维护国家安全法",
+      "zhuma_id": 1182,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国澳门特别行政区基本法",
+      "zhuma_id": 1189,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国村民委员会组织法",
+      "zhuma_id": 1203,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国城市居民委员会组织法",
+      "zhuma_id": 2370,
+      "subject": "宪法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国国家勋章和国家荣誉称号法",
+      "zhuma_id": 1211,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国国旗法",
+      "zhuma_id": 1212,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国国徽法",
+      "zhuma_id": 1213,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国国歌法",
+      "zhuma_id": 1214,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于实行宪法宣誓制度的决定",
+      "zhuma_id": 1215,
+      "subject": "宪法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国人民法院组织法",
+      "zhuma_id": 1218,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国法官法",
+      "zhuma_id": 1225,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国法官职业道德基本准则",
+      "zhuma_id": 1234,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "人民法院工作人员处分条例",
+      "zhuma_id": 1242,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国人民检察院组织法",
+      "zhuma_id": 1246,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国检察官法",
+      "zhuma_id": 1253,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国检察官职业道德基本准则",
+      "zhuma_id": 1262,
+      "subject": "司法制度和法律职业道德",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国律师法",
+      "zhuma_id": 1267,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "律师事务所管理办法",
+      "zhuma_id": 1275,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "律师执业管理办法",
+      "zhuma_id": 1284,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "律师和律师事务所违法行为处罚办法",
+      "zhuma_id": 1291,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "律师职业道德基本准则",
+      "zhuma_id": 1297,
+      "subject": "司法制度和法律职业道德",
+      "has_body": false
+    },
+    {
+      "title": "律师执业行为规范（试行）",
+      "zhuma_id": 1298,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "律师协会会员违规行为处分规则（试行）",
+      "zhuma_id": 1308,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "法律援助条例",
+      "zhuma_id": 1317,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、司法部关于刑事诉讼法律援助工作的规定",
+      "zhuma_id": 1324,
+      "subject": "司法制度和法律职业道德",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国公证法",
+      "zhuma_id": 1325,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "公证机构执业管理办法",
+      "zhuma_id": 1333,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "公证员执业管理办法",
+      "zhuma_id": 1340,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "公证员职业道德基本准则",
+      "zhuma_id": 1348,
+      "subject": "司法制度和法律职业道德",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国公职人员政务处分法",
+      "zhuma_id": 1349,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国法律援助法",
+      "zhuma_id": 2183,
+      "subject": "司法制度和法律职业道德",
+      "has_body": true
+    },
+    {
+      "title": "民法典",
+      "zhuma_id": 1806,
+      "subject": "民法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》有关担保制度的解释",
+      "zhuma_id": 2217,
+      "subject": "民法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于审理民事案件适用诉讼时效制度若干问题的规定",
+      "zhuma_id": 1908,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》总则编若干问题的解释",
+      "zhuma_id": 1925,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》合同编通则若干问题的解释",
+      "zhuma_id": 2227,
+      "subject": "民法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》物权编的解释（一）",
+      "zhuma_id": 1909,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》婚姻家庭编的解释（一）",
+      "zhuma_id": 1919,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》婚姻家庭编的解释（二）",
+      "zhuma_id": 2250,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》继承编的解释（一）",
+      "zhuma_id": 1920,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》侵权责任编的解释（一）",
+      "zhuma_id": 2251,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理买卖合同纠纷案件适用法律问题的解释",
+      "zhuma_id": 1912,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民法典》时间效力的若干规定",
+      "zhuma_id": 1907,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理建筑物区分所有权纠纷案件适用法律若干问题的解释",
+      "zhuma_id": 1911,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理商品房买卖合同纠纷案件适用法律若干问题的解释",
+      "zhuma_id": 1913,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释（一）",
+      "zhuma_id": 1914,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理技术合同纠纷案件适用法律若干问题的解释",
+      "zhuma_id": 1915,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理城镇房屋租赁合同纠纷案件具体应用法律若干问题的解释",
+      "zhuma_id": 1916,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理融资租赁合同纠纷案件适用法律问题的解释",
+      "zhuma_id": 1917,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理民间借贷案件适用法律若干问题的规定",
+      "zhuma_id": 1918,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于确定民事侵权精神损害赔偿责任若干问题的解释",
+      "zhuma_id": 1921,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释",
+      "zhuma_id": 1922,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理利用信息网络侵害人身权益民事纠纷案件适用法律若干问题的规定",
+      "zhuma_id": 1923,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理道路交通事故损害赔偿案件适用法律若干问题的解释",
+      "zhuma_id": 1924,
+      "subject": "民法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国个人信息保护法",
+      "zhuma_id": 2174,
+      "subject": "民法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国刑法",
+      "zhuma_id": 1358,
+      "subject": "刑法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国刑法修正案",
+      "zhuma_id": 1377,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（二）",
+      "zhuma_id": 1378,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（三）",
+      "zhuma_id": 1379,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（四）",
+      "zhuma_id": 1380,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（五）",
+      "zhuma_id": 1381,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（六）",
+      "zhuma_id": 1382,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（七）",
+      "zhuma_id": 1383,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（八）",
+      "zhuma_id": 1384,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（九）",
+      "zhuma_id": 1385,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（十）",
+      "zhuma_id": 1386,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（十一）",
+      "zhuma_id": 1387,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑法修正案（十二）",
+      "zhuma_id": 2211,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于惩治骗购外汇、逃汇和非法买卖外汇犯罪的决定",
+      "zhuma_id": 1388,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第九十三条第二款的解释",
+      "zhuma_id": 1389,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第二百二十八条、第三百四十二条、第四百一十条的解释",
+      "zhuma_id": 1390,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第二百九十四条第一款的解释",
+      "zhuma_id": 1391,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第三百八十四条第一款的解释",
+      "zhuma_id": 1392,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第三百一十三条的解释",
+      "zhuma_id": 1393,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第九章渎职罪主体适用问题的解释",
+      "zhuma_id": 1394,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》有关出口退税、抵扣税款的其他发票规定的解释",
+      "zhuma_id": 1395,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》有关文物的规定适用于具有科学价值的古脊椎动物化石、古人类化石的解释",
+      "zhuma_id": 1396,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第三十条的解释",
+      "zhuma_id": 1397,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第一百五十八条、第一百五十九条的解释",
+      "zhuma_id": 1398,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第二百六十六条的解释",
+      "zhuma_id": 1399,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑法》第三百四十一条、第三百一十二条的解释",
+      "zhuma_id": 1400,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部关于依法适用正当防卫制度的指导意见",
+      "zhuma_id": 1401,
+      "subject": "刑法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用财产刑若干问题的规定",
+      "zhuma_id": 1407,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于处理自首和立功具体应用法律若干问题的解释",
+      "zhuma_id": 1408,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于处理自首和立功若干具体问题的意见",
+      "zhuma_id": 1409,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于办理减刑、假释案件具体应用法律的规定",
+      "zhuma_id": 1410,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理交通肇事刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1411,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理生产、销售伪劣商品刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1412,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理妨害信用卡管理刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1413,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理拐卖妇女儿童犯罪案件具体应用法律若干问题的解释",
+      "zhuma_id": 1415,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理抢劫案件具体应用法律若干问题的解释",
+      "zhuma_id": 1416,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理盗窃刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1417,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、司法部关于办理黑恶势力犯罪案件若干问题的指导意见",
+      "zhuma_id": 2271,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理侵犯知识产权刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2259,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理袭警刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2260,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理诈骗刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1419,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理抢夺刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1420,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理敲诈勒索刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1421,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理组织考试作弊等刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1422,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理寻衅滋事刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1423,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理赌博刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1425,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理虚假诉讼刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1426,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理掩饰、隐瞒犯罪所得、犯罪所得收益刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2361,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理窝藏、包庇刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2323,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理非法行医刑事案件具体应用法律若干问题的解释",
+      "zhuma_id": 1428,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理环境污染刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1429,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理毒品犯罪案件适用法律若干问题的解释",
+      "zhuma_id": 1430,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理组织、强迫、引诱、容留、介绍卖淫刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1431,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理贪污贿赂刑事案件适用法律若干问题的解释",
+      "zhuma_id": 1432,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理挪用公款案件具体应用法律若干问题的解释",
+      "zhuma_id": 1433,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理受贿刑事案件适用法律若干问题的意见",
+      "zhuma_id": 1434,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理渎职刑事案件适用法律若干问题的解释（一）",
+      "zhuma_id": 1435,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理贪污贿赂刑事案件适用法律若干问题的解释（二）",
+      "zhuma_id": 2343,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院 、最高人民检察院关于办理环境污染刑事案件适用法律若干问题的解释",
+      "zhuma_id": 2360,
+      "subject": "刑法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国公务员法",
+      "zhuma_id": 1622,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "国务院行政机构设置和编制管理条例",
+      "zhuma_id": 1649,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "地方各级人民政府机构设置和编制管理条例",
+      "zhuma_id": 1655,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国立法法",
+      "zhuma_id": 1662,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "行政法规制定程序条例",
+      "zhuma_id": 1669,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "规章制定程序条例",
+      "zhuma_id": 1677,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国行政许可法",
+      "zhuma_id": 1685,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于审理行政许可案件若干问题的规定",
+      "zhuma_id": 1694,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国行政处罚法",
+      "zhuma_id": 1695,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国治安管理处罚法",
+      "zhuma_id": 2307,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国行政强制法",
+      "zhuma_id": 1711,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国行政复议法",
+      "zhuma_id": 1719,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国行政复议法实施条例",
+      "zhuma_id": 1727,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国政府信息公开条例",
+      "zhuma_id": 1735,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于审理政府信息公开行政案件适用法律若干问题的解释",
+      "zhuma_id": 2333,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国行政诉讼法",
+      "zhuma_id": 1743,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国行政诉讼法》的解释",
+      "zhuma_id": 1754,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于行政诉讼证据若干问题的规定",
+      "zhuma_id": 1768,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于审理国际贸易行政案件若干问题的规定",
+      "zhuma_id": 1775,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理反倾销行政案件应用法律若干问题的规定",
+      "zhuma_id": 1776,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理反补贴行政案件应用法律若干问题的规定",
+      "zhuma_id": 1777,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于印发《关于审理行政案件适用法律规范问题的座谈会纪要》的通知",
+      "zhuma_id": 1778,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于行政诉讼撤诉若干问题的规定",
+      "zhuma_id": 1783,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理行政协议案件若干问题的规定",
+      "zhuma_id": 1784,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国国家赔偿法",
+      "zhuma_id": 1785,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于人民法院赔偿委员会审理国家赔偿案件程序的规定",
+      "zhuma_id": 1792,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院赔偿委员会适用质证程序审理国家赔偿案件的规定",
+      "zhuma_id": 1793,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院执行《中华人民共和国国家赔偿法》几个问题的解释",
+      "zhuma_id": 1794,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国国家赔偿法》若干问题的解释（一）",
+      "zhuma_id": 1795,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理行政赔偿案件若干问题的规定",
+      "zhuma_id": 1796,
+      "subject": "行政法与行政诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于审理民事、行政诉讼中司法赔偿案件适用法律若干问题的解释",
+      "zhuma_id": 1803,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理刑事赔偿案件适用法律若干问题的解释",
+      "zhuma_id": 1804,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理国家赔偿案件确定精神损害赔偿责任适用法律若干问题的解释",
+      "zhuma_id": 2164,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于正确确定县级以上地方人民政府行政诉讼被告资格若干问题的规定",
+      "zhuma_id": 2194,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理司法赔偿案件适用请求时效制度若干问题的解释",
+      "zhuma_id": 2213,
+      "subject": "行政法与行政诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国民事诉讼法",
+      "zhuma_id": 2052,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民事诉讼法》的解释",
+      "zhuma_id": 2084,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于互联网法院审理案件若干问题的规定",
+      "zhuma_id": 2108,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理民事级别管辖异议案件若干问题的规定",
+      "zhuma_id": 2109,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于民事诉讼证据的若干规定",
+      "zhuma_id": 2110,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于在审理经济纠纷案件中涉及经济犯罪嫌疑若干问题的规定",
+      "zhuma_id": 2117,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国人民调解法",
+      "zhuma_id": 2118,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于人民法院民事调解工作若干问题的规定",
+      "zhuma_id": 2125,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用简易程序审理民事案件的若干规定",
+      "zhuma_id": 2126,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民事诉讼法》审判监督程序若干问题的解释",
+      "zhuma_id": 2133,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国民事诉讼法》执行程序若干问题的解释",
+      "zhuma_id": 2134,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院民事执行中查封、扣押、冻结财产的规定",
+      "zhuma_id": 2135,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院民事执行中拍卖、变卖财产的规定",
+      "zhuma_id": 2136,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于民事执行中变更、追加当事人若干问题的规定",
+      "zhuma_id": 2193,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院办理执行异议和复议案件若干问题的规定",
+      "zhuma_id": 2137,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于执行和解若干问题的规定",
+      "zhuma_id": 2138,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于人民法院执行工作若干问题的规定（试行）",
+      "zhuma_id": 2139,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国仲裁法",
+      "zhuma_id": 2154,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国仲裁法》若干问题的解释",
+      "zhuma_id": 2216,
+      "subject": "民事诉讼法与仲裁制度",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国刑事诉讼法",
+      "zhuma_id": 1437,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国刑事诉讼法》的解释",
+      "zhuma_id": 1495,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于进一步加强合议庭职责的若干规定",
+      "zhuma_id": 1589,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于办理死刑复核案件听取辩护律师意见的办法",
+      "zhuma_id": 1591,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于死刑复核及执行程序中保障当事人合法权益的若干规定",
+      "zhuma_id": 1592,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于死刑缓期执行限制减刑案件审理程序若干问题的规定",
+      "zhuma_id": 1593,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于刑事裁判涉财产部分执行的若干规定",
+      "zhuma_id": 2326,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于刑事再审案件开庭审理程序的具体规定（试行）",
+      "zhuma_id": 1595,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于建立健全防范刑事冤假错案工作机制的意见",
+      "zhuma_id": 1614,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于减刑、假释案件审理程序的规定",
+      "zhuma_id": 1597,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于审理人民检察院按照审判监督程序提出的刑事抗诉案件若干问题的规定",
+      "zhuma_id": 1596,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "人民检察院刑事诉讼规则",
+      "zhuma_id": 1523,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "人民检察院办理减刑、假释案件规定",
+      "zhuma_id": 1598,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "人民检察院办理未成年人刑事案件的规定",
+      "zhuma_id": 1607,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "人民检察院、公安机关羁押必要性审查、评估工作规定",
+      "zhuma_id": 2246,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "公安机关办理刑事案件程序规定",
+      "zhuma_id": 1541,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部、全国人大常委会法制工作委员会关于实施刑事诉讼法若干问题的规定",
+      "zhuma_id": 1482,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院 最高人民检察院 公安部 国家安全部 司法部印发《关于适用认罪认罚从宽制度的指导意见》的通知",
+      "zhuma_id": 1556,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部关于依法保障律师执业权利的规定",
+      "zhuma_id": 1570,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部关于办理刑事案件严格排除非法证据若干问题的规定",
+      "zhuma_id": 1577,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部关于办理刑事案件收集提取和审查判断电子数据若干问题的规定",
+      "zhuma_id": 1583,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部关于规范量刑程序若干问题的意见",
+      "zhuma_id": 1590,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部、司法部办理刑事案件排除非法证据规程",
+      "zhuma_id": 2297,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院公安部、国家安全部、司法部办理刑事案件庭前会议规程",
+      "zhuma_id": 2299,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、中国海警局关于海上刑事案件管辖等有关问题的通知",
+      "zhuma_id": 1606,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于适用犯罪嫌疑人、被告人逃匿、死亡案件违法所得没收程序若干问题的规定",
+      "zhuma_id": 1620,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院　司法部关于为死刑复核案件被告人依法提供法律援助的规定（试行）",
+      "zhuma_id": 2324,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院、最高人民检察院、公安部、国家安全部关于取保候审若干问题的规定",
+      "zhuma_id": 2196,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国人民陪审员法",
+      "zhuma_id": 1467,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国人民陪审员法》若干问题的解释",
+      "zhuma_id": 1468,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国社区矫正法",
+      "zhuma_id": 1469,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "法律援助值班律师工作办法",
+      "zhuma_id": 1571,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "关于办理信息网络犯罪案件适用刑事诉讼程序若干问题的意见",
+      "zhuma_id": 2195,
+      "subject": "刑事诉讼法",
+      "has_body": true
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑事诉讼法》第七十九条第三款的解释",
+      "zhuma_id": 1479,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑事诉讼法》第二百五十四条第五款、第二百五十七条第二款的解释",
+      "zhuma_id": 1480,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于《中华人民共和国刑事诉讼法》第二百七十一条第二款的解释",
+      "zhuma_id": 1481,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于 《中华人民共和国刑事诉讼法》 第二百九十二条的解释",
+      "zhuma_id": 2345,
+      "subject": "刑事诉讼法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国公司法",
+      "zhuma_id": 1927,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国公司法》若干问题的规定（一）",
+      "zhuma_id": 1941,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国公司法》若干问题的规定（二）",
+      "zhuma_id": 1942,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国公司法》若干问题的规定（三）",
+      "zhuma_id": 1943,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国公司法》若干问题的规定（四）",
+      "zhuma_id": 1944,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国公司法》若干问题的规定（五）",
+      "zhuma_id": 1945,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国合伙企业法",
+      "zhuma_id": 1946,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国个人独资企业法",
+      "zhuma_id": 1953,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国外商投资法",
+      "zhuma_id": 1960,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国企业破产法",
+      "zhuma_id": 1967,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国企业破产法》若干问题的规定（一）",
+      "zhuma_id": 1980,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国企业破产法》若干问题的规定（二）",
+      "zhuma_id": 1981,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国企业破产法》若干问题的规定（三）",
+      "zhuma_id": 1982,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国票据法",
+      "zhuma_id": 1983,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国证券法",
+      "zhuma_id": 1991,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国证券投资基金法",
+      "zhuma_id": 2006,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "中华人民共和国保险法",
+      "zhuma_id": 2022,
+      "subject": "商法",
+      "has_body": true
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国保险法》若干问题的解释（一）",
+      "zhuma_id": 2031,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国保险法》若干问题的解释（二）",
+      "zhuma_id": 2032,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国保险法》若干问题的解释（三）",
+      "zhuma_id": 2033,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "最高人民法院关于适用《中华人民共和国保险法》若干问题的解释（四）",
+      "zhuma_id": 2034,
+      "subject": "商法",
+      "has_body": false
+    },
+    {
+      "title": "中华人民共和国海商法",
+      "zhuma_id": 2035,
+      "subject": "商法",
+      "has_body": true
+    }
+  ]
+}
