@@ -1,0 +1,12 @@
+{
+  "_readme": "金标人工复核状态（gold/gold_real_v3_batch1.jsonl 的 37 题）。复核人把结果写进对应 qid 条目后重跑 scripts/make_gold_review_worksheet.py，工作表的「复核」列会由此文件预填，重新生成不丢人工结果。",
+  "_fields": {
+    "status": "✓（确实回答）| ✗（未回答或答非所问）| 存疑（无法确定）| 留空=未复核",
+    "reviewer": "复核人姓名/ID",
+    "date": "复核日期 YYYY-MM-DD",
+    "note": "备注（如修改金标的理由）",
+    "label_offset": "true = 金标 num（分块行标签）与证据句口径不一致，复核时以 evidence 定位真实条文",
+    "offset_note": "行标签偏移的具体说明"
+  },
+  "_口径声明": "batch1 金标行全部落在 v2 官方 docx（民法典/刑法/劳动法/劳动合同法）与 v3 flk 官方文件，均非 v1 公报源，无已知双栏污染；证据句由构建脚本强制校验为金标行文本逐字子串。"
+}

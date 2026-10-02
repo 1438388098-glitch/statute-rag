@@ -1,0 +1,66 @@
+{
+  "_readme": "同名法 / 版本口径清点（公开事实：法名、来源、bbbs、公布/施行日期、生效状态；不含正文）。",
+  "_derivation": "语料实算（scripts/coverage_report.py 的归一+来源判定）× 本地 flk_manifest_a.json / flk_matched.json；复算命令见 docs/corpus-governance.md。",
+  "cross_source_same_name": [
+    {
+      "name": "最高人民法院、最高人民检察院关于办理环境污染刑事案件适用法律若干问题的解释",
+      "sources": {
+        "公报源（v1，本地 legal-wisdom 库）": {
+          "rows": 24,
+          "laws": [
+            "最高人民法院、最高人民检察院关于办理环境污染刑事案件适用法律若干问题的解释"
+          ]
+        },
+        "flk 官方文件（v3）": {
+          "rows": 20,
+          "laws": [
+            "最高人民法院 、最高人民检察院关于办理环境污染刑事案件适用法律若干问题的解释"
+          ]
+        }
+      },
+      "flk_bbbs": "ff8081819e48b44c019e5e53da2a4a6c",
+      "flk_gbrq": "2026-03-19",
+      "flk_effective": true
+    }
+  ],
+  "flk_noncurrent_versions": [
+    {
+      "title": "全国人民代表大会关于建立健全香港特别行政区维护国家安全的法律制度和执行机制的决定",
+      "bbbs": "ff8080817703add201771951babd2055",
+      "gbrq": "2020-05-28",
+      "sxrq": "2020-05-28",
+      "sxx": null,
+      "sxx_note": "3=有效；2=已修改；null=决定类无施行状态字段"
+    },
+    {
+      "title": "全国人民代表大会常务委员会关于实行宪法宣誓制度的决定",
+      "bbbs": "ff8080817703add2017719484c07200c",
+      "gbrq": "2018-02-24",
+      "sxrq": "2018-03-12",
+      "sxx": null,
+      "sxx_note": "3=有效；2=已修改；null=决定类无施行状态字段"
+    },
+    {
+      "title": "最高人民法院、最高人民检察院关于办理妨害信用卡管理刑事案件具体应用法律若干问题的解释",
+      "bbbs": "402881e45ffb0c10015ffb55f411032e",
+      "gbrq": "2009-12-03",
+      "sxrq": "2009-12-16",
+      "sxx": 2,
+      "sxx_note": "3=有效；2=已修改；null=决定类无施行状态字段"
+    },
+    {
+      "title": "最高人民法院关于审理非法行医刑事案件具体应用法律若干问题的解释",
+      "bbbs": "402881e45ffbbe41015ffc8c83e50f23",
+      "gbrq": "2008-04-29",
+      "sxrq": "2008-05-09",
+      "sxx": 2,
+      "sxx_note": "3=有效；2=已修改；null=决定类无施行状态字段"
+    }
+  ],
+  "v1_internal_duplicate_laws_note": "v1 公报源内部另有 401 组同 (law, num) 重复行（多集中在国务院条例），见 docs/corpus-audit.md 的 dup-law-num 表。",
+  "recommendation": [
+    "跨来源同名：flk 官方版本为权威（取公布日期最新者），v1 公报源同法行标为 superseded，检索层按 meta 折叠或降权（检索实现归检索线）。",
+    "flk 非现行有效（sxx=2）：核实是否有更新版本未入库；若有，按 append-only 追加新版本行并在 meta 标 effective/gbrq。",
+    "v1 内部重复 (law,num)：先人工确认是否为同法两版本/两个附件，再决定保留或折叠。"
+  ]
+}
