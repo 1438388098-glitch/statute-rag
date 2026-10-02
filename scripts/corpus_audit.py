@@ -9,6 +9,9 @@ v3 扩到 25,273 条 / 432 部后，质量问题不再只是「有没有条文�
 - polluted-interleave  疑似双栏交错：v1 公报源（含公报页眉/页码排版标记）且窄栏切片
                         （空白分段中位长度 < 20）。**启发式风险带**，非确证污染——
                         公报 PDF 双栏解析若发生串行，本旗标圈定风险行，需人工复核。
+- narrow-no-furniture  第二风险带（低置信）：v1 公报源且窄栏切片、但**无**公报排版标记。
+                        与 polluted-interleave 互补；窄栏单用会误报（见报告抽样），
+                        故本旗标置信度低，仅提示「5010 不是风险带上限」。
 - num-mapped           条号来自回退映射：meta.num_origin 与 num 不一致
                         （「一、」/「N.」→「第X条」，见 docs/corpus-completion.md §3.3）。
 - whole-document       num == "全文" 或 meta.unit == "whole-document"（整篇作一条）。
@@ -83,6 +86,9 @@ def row_flags(row, dup_keys):
     if (classify_source(row) == GAZETTE_SOURCE
             and is_gazette_furniture(text) and narrow_column(text)):
         flags.append("polluted-interleave")
+    elif (classify_source(row) == GAZETTE_SOURCE and narrow_column(text)):
+        # 第二风险带：窄栏但无公报排版标记。与 polluted-interleave 互斥、低置信。
+        flags.append("narrow-no-furniture")
     return flags
 
 
@@ -128,12 +134,25 @@ def audit(rows):
         })
     problem_laws.sort(key=lambda x: (-x["flagged"], x["law"]))
 
+    by_id = dict((r.get("id"), r) for r in rows)
+    spot_check = []
+    for rid in SPOT_CHECK_IDS:
+        r = by_id.get(rid)
+        if r is None:
+            continue
+        b = brief(r)
+        b["narrow"] = narrow_column(r.get("text") or u"")
+        b["gazette_furniture"] = is_gazette_furniture(r.get("text") or u"")
+        b["snippet"] = u"".join((r.get("text") or u"").split())[:80]
+        spot_check.append(b)
+
     return {
         "corpus_rows": len(rows),
         "corpus_laws": len(set(r.get("law") for r in rows)),
         "flag_counts": dict(flag_counts),
         "per_source": dict((k, dict(v)) for k, v in per_source.items()),
         "problem_laws": problem_laws,
+        "interleave_spot_check": spot_check,
         "dup_law_num_rows": sorted((brief(r) for r in rows
                                     if (r.get("law"), r.get("num")) in dup_keys),
                                    key=lambda x: (x["law"] or u"", x["num"] or u"")),
@@ -151,13 +170,19 @@ def audit(rows):
 
 
 FLAG_DOC = [
-    ("polluted-interleave", u"疑似双栏交错（启发式风险带，需人工复核）"),
+    ("polluted-interleave", u"疑似双栏交错·有公报排版标记（启发式风险带，需人工复核）"),
+    ("narrow-no-furniture", u"疑似双栏交错·无公报排版标记（第二风险带，低置信）"),
     ("num-mapped", u"条号来自回退映射（num_origin ≠ num）"),
     ("dup-law-num", u"同 (law, num) 多行并存"),
     ("whole-document", u"整篇作一条（num=全文）"),
     ("very-long", u"超长条（> %d 字）" % VERY_LONG),
     ("empty-or-tiny", u"空/超短（< %d 字）" % TINY_LEN),
 ]
+
+# 双栏交错判据的抽样核对样本（v1 行 id 冻结，故可用固定 id 做人工抽检留痕）：
+# 70467 窄栏无标记但确为真交错；78632/80601/84520 窄栏无标记但顺序正确（反向证据）。
+SPOT_CHECK_IDS = (70467, 78632, 80601, 84520)
+SPOT_TRUE_INTERLEAVE = (70467,)
 
 
 def review_table(rows, keys, headers, json_key, limit):
@@ -207,14 +232,41 @@ def format_markdown(rep):
     L.append(u"")
     L.append(u"## 疑似双栏交错：按法（top 20）")
     L.append(u"")
-    L.append(u"> 启发式：v1 公报源 + 公报排版标记 + 窄栏切片（空白分段中位长度 < %d）。"
-             u"**该启发式不能区分「窄栏但顺序正确」与「窄栏且串行交错」**，"
+    L.append(u"> **双栏交错有两个风险带，5010 不是上限**：")
+    L.append(u"> - `polluted-interleave` = v1 公报源 + **有**公报排版标记 + 窄栏切片，共 **%d** 行；"
+             u"抽样核对为真交错的精度较高，故作为主风险带。"
+             % rep["flag_counts"].get("polluted-interleave", 0))
+    L.append(u"> - `narrow-no-furniture` = v1 公报源 + 窄栏切片 + **无**公报排版标记，共 **%d** 行；"
+             u"是**低置信第二风险带**——抽检既含真交错（如 id=70467 生态环境侵权民事诉讼证据规定第十六条），"
+             u"也含窄栏但顺序正确者（如 id=78632 电力供应与使用条例第二十一条），"
+             u"因此不能用「窄栏」单判，须逐一对照官方文本。"
+             % rep["flag_counts"].get("narrow-no-furniture", 0))
+    L.append(u"> - 两带合计 = v1 公报源窄栏行总数（%d）。"
+             % (rep["flag_counts"].get("polluted-interleave", 0)
+                + rep["flag_counts"].get("narrow-no-furniture", 0)))
+    L.append(u">")
+    L.append(u"> 启发式：窄栏 = 空白分段中位长度 < %d。**该启发式不能区分「窄栏但顺序正确」与「窄栏且串行交错」**，"
              u"只圈定风险带，逐行是否真污染须人工对照官方文本。" % NARROW_MED)
+    L.append(u"")
+    L.append(u"### 主风险带 polluted-interleave 按法（top 20）")
     L.append(u"")
     L.append(u"| 法名 | 行数 | 疑似交错行 |")
     L.append(u"|---|---|---|")
     for p in [x for x in rep["problem_laws"] if x["flags"].get("polluted-interleave")][:20]:
         L.append(u"| %s | %d | %d |" % (p["law"], p["rows"], p["flags"]["polluted-interleave"]))
+    L.append(u"")
+    L.append(u"### 双栏交错判据抽样核对")
+    L.append(u"")
+    L.append(u"| 行 id | 法名 | 条号 | 窄栏 | 有排版标记 | 结论 |")
+    L.append(u"|---|---|---|---|---|---|")
+    for s in rep.get("interleave_spot_check", []):
+        if s["id"] in SPOT_TRUE_INTERLEAVE:
+            verdict = u"真交错（第二带漏判，需人工复核）"
+        else:
+            verdict = u"窄栏但顺序正确（窄栏单判会误报）"
+        L.append(u"| %s | %s | %s | %s | %s | %s |" % (
+            s["id"], _cell(s["law"]), _cell(s["num"]),
+            u"是" if s["narrow"] else u"否", u"是" if s["gazette_furniture"] else u"否", verdict))
     L.append(u"")
     L.append(u"## 交专业复核一：重复条号 dup-law-num（%d 行）"
              % len(rep["dup_law_num_rows"]))
