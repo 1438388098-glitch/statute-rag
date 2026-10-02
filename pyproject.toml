@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "statute-rag"
+description = "Article-level hybrid statute retrieval with forced verifiable citations (character-bigram BM25 / LIKE multi-channel RRF fusion)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "1438388098-glitch" }]
+keywords = ["legal", "chinese", "bm25", "retrieval", "rag", "citation"]
+# 版本单点来源：statute_rag/__init__.py 的 __version__（避免双源漂移）
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Legal Industry",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Text Processing :: Indexing",
+]
+# 设计决定：运行时零第三方依赖（BM25 纯 dict 倒排、无分词器、无向量库）。
+# v0.2 的语义重排通道将以 extras（statute-rag[semantic]）形式提供，不进核心。
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/1438388098-glitch/statute-rag"
+Documentation = "https://github.com/1438388098-glitch/statute-rag/tree/main/docs"
+Changelog = "https://github.com/1438388098-glitch/statute-rag/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["statute_rag"]
+
+[tool.setuptools.dynamic]
+version = { attr = "statute_rag.__version__" }
+
+# synonyms.json 是包内运行数据（query_expansion.load_synonyms 按 __file__ 定位），
+# 不配 package-data 时 wheel 安装后加载词典直接崩。
+[tool.setuptools.package-data]
+statute_rag = ["synonyms.json"]

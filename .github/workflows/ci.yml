@@ -19,8 +19,20 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: 全量单测（34 例）
+      - name: 全量单测（41 例）
         run: python -m unittest discover -s tests
+
+      - name: 安装冒烟——pip 装包后从安装副本加载包数据（synonyms.json 进 wheel）
+        run: |
+          pip install .
+          cd "$(mktemp -d)" && python -c "
+          import statute_rag
+          from statute_rag.query_expansion import load_synonyms
+          assert statute_rag.__version__, 'missing __version__'
+          n = len(load_synonyms())
+          assert n > 0, 'package data (synonyms.json) missing in installed copy'
+          print('install smoke OK: v%s, %d synonym entries' % (statute_rag.__version__, n))
+          "
 
       - name: demo 第一步——生成合成演示语料
         run: python scripts/make_demo_corpus.py
