@@ -15,7 +15,7 @@
 传 --host，并自行置于反向代理之后——本项目默认不做这件事。
 
 用法：
-  python scripts/app.py                                  # 读 data/corpus_v3.jsonl
+  python scripts/app.py                                  # 读 data/corpus_v4.jsonl（条级重建版）
   python scripts/app.py --corpus demo_corpus/corpus.jsonl # 无真实语料时先跑演示语料
   python scripts/app.py --port 9000 --no-browser
 """
@@ -46,7 +46,8 @@ from statute_rag.query_expansion import load_synonyms  # noqa: E402
 from statute_rag.retrieval import HYBRID_FUSION_DEPTH, HybridRetriever  # noqa: E402
 
 APP_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app", "index.html")
-DEFAULT_CORPUS = os.path.join("data", "corpus_v3.jsonl")
+# 默认用条级重建版 v4：v3 里 130 部法的「公报页块行」已换成校验过的条级正文
+DEFAULT_CORPUS = os.path.join("data", "corpus_v4.jsonl")
 DEFAULT_K = 10
 MAX_K = 50
 # 超长查询只会稀释检索信号（且会让 URL 过长），截断比报错友好；
