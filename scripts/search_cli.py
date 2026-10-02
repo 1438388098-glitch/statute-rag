@@ -28,20 +28,31 @@ def main():
     parser.add_argument("--corpus", help="已有语料 JSONL")
     parser.add_argument("--retriever", default="hybrid", choices=sorted(RETRIEVERS))
     parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--full", action="store_true",
+                        help="输出条文全文（缺省截断 120 字）")
     args = parser.parse_args()
 
     if args.db:
+        if not os.path.exists(args.db):
+            parser.error("语料库不存在：%s（legal.db 由 legal-wisdom 项目生成）" % args.db)
         corpus_path = os.path.join("data", "corpus.jsonl")
         print("导入语料（首次较慢）…")
         import_articles(args.db, corpus_path)
         corpus = load_corpus(corpus_path)
     elif args.corpus:
+        if not os.path.exists(args.corpus):
+            parser.error("语料文件不存在：%s（无语料可先跑 python scripts/make_demo_corpus.py）"
+                         % args.corpus)
         corpus = load_corpus(args.corpus)
     else:
         parser.error("需要 --db 或 --corpus")
         return
 
-    retriever = RETRIEVERS[args.retriever](corpus)
+    try:
+        retriever = RETRIEVERS[args.retriever](corpus)
+    except (KeyError, ValueError) as exc:
+        parser.error("语料格式不合法，无法构建索引：%s" % exc)
+        return
     results = retriever.search(args.query, k=args.k)
     if not results:
         print("（无命中——本检索器为词法检索，请换关键词重试；语义检索在路线图中）")
@@ -51,7 +62,10 @@ def main():
     for i, cite in enumerate(results, 1):
         # id 可能是 int（源库 id）或 str（演示语料 id），统一按字符串展示
         print("[%d] %s %s（id=%s，score=%.4f）" % (i, cite["law"], cite["num"], cite["id"], cite["score"]))
-        print("    " + cite["text"][:120] + ("…" if len(cite["text"]) > 120 else ""))
+        limit = None if args.full else 120
+        text = cite["text"] if limit is None else (
+            cite["text"][:limit] + ("…" if len(cite["text"]) > limit else ""))
+        print("    " + text)
         print("-" * 60)
 
 

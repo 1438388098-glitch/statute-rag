@@ -50,8 +50,7 @@ def main():
         gold = load_gold(args.gold)
         print("加载金标：", args.gold)
     else:
-        gold_path = os.path.join(args.out_dir, "gold_synth_%d.json" % args.gold_size) \
-            if args.out_dir != "gold" else "gold_synth_%d.json" % args.gold_size
+        gold_path = os.path.join(args.out_dir, "gold_synth_%d.json" % args.gold_size)
         gold = make_gold(corpus, size=args.gold_size, seed=args.seed)
         save_gold(gold, gold_path)
         print("合成金标已生成（seed=%d）：" % args.seed)
@@ -68,6 +67,8 @@ def main():
     report = format_report(results, len(corpus), gold_desc=args.gold_desc)
     print("")
     print(report)
+    if not os.path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
     report_path = os.path.join(args.out_dir, "eval_report.md")
     with io.open(report_path, "w", encoding="utf-8") as f:
         f.write("# 评测报告\n\n```\n%s\n```\n" % report)

@@ -67,11 +67,11 @@ class RerankerContractTest(unittest.TestCase):
         h = HybridRetriever(CORPUS, reranker=OverlapReranker())
         self.assertTrue(len(h.search("正当防卫", k=2)) <= 2)
 
-    def test_good_reranker_can_lift_lexically_close_hit(self):
-        """重排红利的桩级验证：扩词典救不了的近似命中，靠重排翻进前位。
+    def test_good_reranker_reorders_by_query_coverage(self):
+        """重排器确定性地按自身语义把最相关条文顶到第一（这里用字符覆盖模拟）。
 
-        「噪音扰民」在原查询通道词法弱（噪音不在条文中），overlap 重排器
-        依据查询字符覆盖把含「噪声…干扰他人正常生活」的条文抬到前面。
+        真实翻转能力属 v0.2 的语义模型；本测试只锁「重排器的排序决定输出
+        首位」这一接口行为，不依赖具体夹具下的基线次序。
         """
         corpus = [
             {"id": 1, "law": "测试法", "num": "第一条",
@@ -81,10 +81,11 @@ class RerankerContractTest(unittest.TestCase):
             {"id": 3, "law": "测试法", "num": "第三条",
              "text": "商品交换应当遵循自愿、平等、公平、诚实信用的原则。"},
         ]
-        base = HybridRetriever(corpus).search("邻居半夜噪音扰民可以报警吗", k=2)
         reranked = HybridRetriever(corpus, reranker=OverlapReranker()).search(
             "邻居半夜噪音扰民可以报警吗", k=2)
-        self.assertEqual(_ids(reranked)[0], 2)  # 重排器把高覆盖条文抬到第一
+        # 查询字符「噪音扰民」在 id=2 条文中的覆盖最高，重排器应把它顶到第一
+        self.assertEqual(_ids(reranked)[0], 2)
+        self.assertIn(_ids(reranked)[1], (1, 3))
 
 
 if __name__ == "__main__":

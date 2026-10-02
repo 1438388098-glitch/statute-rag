@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """importer 单测：临时 SQLite 上验证导入与质检过滤。"""
 import io
-import json
 import os
 import sqlite3
 import sys
