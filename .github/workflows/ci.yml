@@ -34,6 +34,9 @@ jobs:
           print('install smoke OK: v%s, %d synonym entries' % (statute_rag.__version__, n))
           "
 
+      - name: 数字一致性——两份 README 与 docs/metrics.json 对账（防双语漂移）
+        run: python scripts/check_doc_numbers.py
+
       - name: demo 第一步——生成合成演示语料
         run: python scripts/make_demo_corpus.py
 

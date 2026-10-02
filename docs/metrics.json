@@ -1,0 +1,68 @@
+{
+  "generated": {
+    "commit": "cd53923",
+    "corpus_size": 14212,
+    "date": "2026-10-02 12:14"
+  },
+  "real": {
+    "bm25": {
+      "mrr": 0.18,
+      "mrr_display": "0.180",
+      "recall_at_5": 0.2632,
+      "recall_at_5_display": "26.3%"
+    },
+    "hybrid": {
+      "mrr": 0.312,
+      "mrr_display": "0.312",
+      "recall_at_5": 0.4474,
+      "recall_at_5_display": "44.7%"
+    },
+    "like": {
+      "mrr": 0.0,
+      "mrr_display": "0.000",
+      "recall_at_5": 0.0,
+      "recall_at_5_display": "0.0%"
+    },
+    "n": 38
+  },
+  "real_deep": {
+    "recall_at_10": 0.5526,
+    "recall_at_20": 0.6842,
+    "recall_at_30": 0.7895,
+    "recall_at_5": 0.4474
+  },
+  "real_deep_display": {
+    "R@10": "55.3%",
+    "R@20": "68.4%",
+    "R@30": "78.9%",
+    "R@5": "44.7%"
+  },
+  "real_hybrid_rank_histogram": {
+    "1": 9,
+    "11-30": 9,
+    "2-5": 8,
+    "6-10": 4,
+    "miss": 8
+  },
+  "synth": {
+    "bm25": {
+      "mrr": 0.954,
+      "mrr_display": "0.954",
+      "recall_at_5": 0.9661,
+      "recall_at_5_display": "96.6%"
+    },
+    "hybrid": {
+      "mrr": 0.984,
+      "mrr_display": "0.984",
+      "recall_at_5": 0.9887,
+      "recall_at_5_display": "98.9%"
+    },
+    "like": {
+      "mrr": 0.774,
+      "mrr_display": "0.774",
+      "recall_at_5": 0.774,
+      "recall_at_5_display": "77.4%"
+    },
+    "n": 177
+  }
+}

@@ -80,6 +80,7 @@ legal.db ──importer──> 语料 JSONL（质检三层过滤）
 | hybrid（v0.1 基线：BM25+LIKE 双路 RRF） | 98.9% | 0.984 | 26.3%（10/38） | 0.180 |
 | **hybrid（v0.1.1：+ 同义扩展查询路）** | **98.9%（零回退）** | **0.984** | **44.7%（17/38，+18.4pt）** | **0.312** |
 
+- **深度召回曲线（固定 depth=30 的同一份排名截取，跨 k 可比）**：真实问句上 hybrid Recall@5 44.7% → Recall@10 55.3% → Recall@20 68.4% → Recall@30 78.9%。21 题未命中中 13 题在 top-30 内（v0.2 重排通道的工作面），8 题属词法/语料层失败、重排救不了。逐 k 表与排名分布：[docs/eval_report.md](docs/eval_report.md)（由 `scripts/gen_eval_report.py` 生成；[docs/metrics.json](docs/metrics.json) 为数字单一来源，CI 校验与两份 README 一致）。
 - **合成金标口径**：题目由条文中的全库唯一短语机械生成（seed=20260918，N=177），衡量「给定条文中的独特表述，能否把该条文检回来」的词法召回上限。金标见 [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl)，报告见 [docs/eval_report.md](docs/eval_report.md)。它同时是查询扩展改进的**留出守门**：真实金标提升的有效性以「合成金标回退 ≤2pt」约束，实测零回退。
 - **真实问句金标 v1（LLM 核验，人工法律复核待做）**：38 条问句来自百度知道真实法律提问（逐条记录来源 URL），query 为问句原文直接送检。v0.1 基线 hybrid Recall@5 = **26.3%**，主因：口语词与法言法语无词法重叠、同部法律内部竞争、公报双栏法律的解析污染。v0.1.1 经通用同义词典 + 查询扩展提升至 **44.7%**；剩余 21 题未命中（纯语义等价、同法/跨法竞争、双栏解析污染）如实列出。逐题明细、失败案例与覆盖缺口见 [docs/real-question-eval.md](docs/real-question-eval.md)，金标见 [gold/gold_real_38.jsonl](gold/gold_real_38.jsonl)，改进实验记录见 [docs/retrieval-improvement.md](docs/retrieval-improvement.md)。
 - 复现（需自备语料 `data/corpus.jsonl`）：
