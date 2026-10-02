@@ -284,7 +284,7 @@ python scripts/ablate_retrieval.py \
     --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl \
     --weight-scan --ks 5,10,20,30
 
-# ④ 当前口径（v3）的入库报告与机器可读指标
+# ④ 当前口径（v3）的入库报告与机器可读指标（与 docs/eval_report.md 头部复现行一致）
 python scripts/gen_eval_report.py --corpus data/corpus_v3.jsonl --corpus-label v3 \
     --history v1=data/corpus.jsonl --history v2=data/corpus_v2.jsonl \
     --scope-note "（v3 法条补全后；v1/v2 为历史口径，见文末并列表）"
