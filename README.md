@@ -95,7 +95,7 @@ statute_rag/          core package (stdlib only)
   └── interfaces.py       Reranker contract for v0.2 (model plugs in later)
 scripts/              CLIs: run_eval, search_cli, bench, gen_eval_report,
                       check_doc_numbers, make_demo_corpus, ablate_retrieval, …
-tests/                67 unit tests (unittest, no fixtures beyond tmpdirs)
+tests/                108 unit tests (unittest, no fixtures beyond tmpdirs)
 gold/                 committed gold sets + human-review status
 docs/                 generated eval report, metrics.json, experiment logs
 ```
@@ -137,7 +137,7 @@ Reproducing — three honest tiers:
 
 3. **Your own Chinese statute corpus**: the retrieval trio, synthetic gold and quality gate work out of the box; the committed `gold_real_38.jsonl` binds `gold_id`s to our import's chunk-row ids, so its numbers cannot be re-run on a different corpus — reuse the 38 questions by rebuilding row ids with `build_real_gold.py` (questions and source URLs carry over).
 
-- Unit tests: `python -m unittest discover -s tests` (67 cases). Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
+- Unit tests: `python -m unittest discover -s tests` (108 cases). Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
 
 ## Known failure cases
 

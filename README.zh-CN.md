@@ -90,7 +90,7 @@ statute_rag/          核心包（纯标准库）
   └── interfaces.py       v0.2 Reranker 接口约定（模型后接）
 scripts/              命令行：run_eval、search_cli、bench、gen_eval_report、
                       check_doc_numbers、make_demo_corpus、ablate_retrieval 等
-tests/                67 例单测（unittest，临时目录自造语料）
+tests/                108 例单测（unittest，临时目录自造语料）
 gold/                 入库金标 + 人工复核状态
 docs/                 生成的评测报告、metrics.json、实验记录
 ```
@@ -135,7 +135,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 
 3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
 
-- 单元测试 67 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。
+- 单元测试 108 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。
 
 ```bash
 # 30 秒检索演示（需语料）
