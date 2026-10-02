@@ -117,9 +117,13 @@ def render(rows, statuses, snapshot_date, eval_doc_name, gold_label=None, status
     lines.append("> **完成判定**：%d 题全部 `✓` 即「人工复核完成」；**任何 `✗` 需修改金标并重跑评测**"
                  "（评测命令见 [real-question-eval.md](%s) 文末）。" % (len(rows), eval_doc_name))
     lines.append(">")
-    lines.append("> **⚠行标签偏移行**（%s）：金标 `num` 是语料分块行标签，与证据句所属条文的实际条号"
-                 "可能不一致（分块跨条 + 双栏 PDF 解析污染，见 real-question-eval.md §3/§8）。"
-                 "复核这些行时以 evidence 在干净文本中定位真实条文，并在状态文件回填确认条号。" % "、".join(offset_rows))
+    if offset_rows:
+        lines.append("> **⚠行标签偏移行**（%s）：金标 `num` 是语料分块行标签，与证据句所属条文的实际条号"
+                     "可能不一致（分块跨条 + 双栏 PDF 解析污染，见 real-question-eval.md §3/§8）。"
+                     "复核这些行时以 evidence 在干净文本中定位真实条文，并在状态文件回填确认条号。"
+                     % "、".join(offset_rows))
+    else:
+        lines.append("> **⚠行标签偏移行**：本批**无**（状态文件未标 label_offset 行）。")
     lines.append("")
     lines.append("| qid | 问句（截断 30 字） | 金标条文（法名+条号） | evidence 摘要（截断 40 字） | 来源站点 | 复核 |")
     lines.append("|---|---|---|---|---|---|")

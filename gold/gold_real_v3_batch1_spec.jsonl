@@ -22,9 +22,9 @@
 {"question": "高空抛物砸到人该由谁负责邻居高空抛物能报警处理吗", "url": "http://zhidao.baidu.com/question/342915387408636045.html", "anchors": ["禁止从建筑物中抛掷物品"], "source_site": "百度知道", "verified": true}
 {"question": "不小心把从楼上把东西弄下来了算高空抛物吗", "url": "http://zhidao.baidu.com/question/1460533247853414340.html", "anchors": ["禁止从建筑物中抛掷物品"], "source_site": "百度知道", "verified": true}
 {"question": "高空抛物的法律责任", "url": "http://zhidao.baidu.com/question/1704546453687451948.html", "anchors": ["禁止从建筑物中抛掷物品"], "source_site": "百度知道", "verified": true}
-{"question": "高空抛物的法律责任是怎样的", "url": "http://zhidao.baidu.com/question/1781008318643005700.html", "anchors": ["从建筑物或者其他高空抛掷物品，情节严重的"], "source_site": "百度知道", "verified": true}
+{"question": "高空抛物的法律责任是怎样的", "url": "http://zhidao.baidu.com/question/1781008318643005700.html", "anchors": ["从建筑物或者其他高空抛掷物品，情节严重的"], "source_site": "百度知道", "verified": true, "prefer_num": "第二百九十一条", "prefer_num_note": "同一句同时命中修正案条款与刑法正文行，主标签取刑法现行正文行"}
 {"question": "被私密照威胁判几年", "url": "https://www.findlaw.cn/wenda/q_61409118.html", "anchors": ["敲诈勒索公私财物，数额较大或者多次敲诈勒索的"], "source_site": "找法网", "verified": true}
-{"question": "袭警重伤怎样判责", "url": "https://www.findlaw.cn/wenda/q_61409089.html", "anchors": ["暴力袭击正在依法执行职务的人民警察的，处三年以下有期徒刑"], "source_site": "找法网", "verified": true}
+{"question": "袭警重伤怎样判责", "url": "https://www.findlaw.cn/wenda/q_61409089.html", "anchors": ["暴力袭击正在依法执行职务的人民警察的，处三年以下有期徒刑"], "source_site": "找法网", "verified": true, "prefer_num": "第二百七十七条", "prefer_num_note": "同一句同时命中修正案条款与刑法正文行，主标签取刑法现行正文行"}
 {"question": "自己被诈骗报警有用吗", "url": "https://www.findlaw.cn/wenda/q_61409116.html", "anchors": ["诈骗公私财物，数额较大的"], "source_site": "找法网", "verified": true}
 {"question": "倒卖公司财物2000元以下能判多久", "url": "https://www.findlaw.cn/wenda/q_61409097.html", "anchors": ["将本单位财物非法占为己有"], "source_site": "找法网", "verified": true}
 {"question": "刑法关于正当防卫的规定", "url": "http://zhidao.baidu.com/question/212753021825051365.html", "anchors": ["属于正当防卫，不负刑事责任"], "source_site": "百度知道", "verified": true}

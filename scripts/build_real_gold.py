@@ -156,13 +156,16 @@ def build_gold(corpus, specs, max_gold=MAX_GOLD, qid_prefix=u"r", default_site=S
 
     failed 为 [(spec, reason)]，含证据未命中与 verified=false 两类。
     qid 默认取 spec 序号（与内置 38 题口径一致），spec 可用 qid 字段显式覆盖。
+    spec 可用 prefer_num 指定「条目所在的现行法条行」为首选主标签（如修正案条款
+    与刑法正文行同时命中同一句时，把现行法条行排到最前；不改变 gold_ids 集合）。
     """
     for a in corpus:
         a["_norm"] = u"".join((a.get("text") or u"").split())
     out, failed = [], []
     for i, spec in enumerate(specs, start=1):
         if spec.get("verified") is False:
-            failed.append((spec, u"未核验（verified=false），不进金标"))
+            reason = u"未核验（verified=false）：%s" % (spec.get("unverified_reason") or u"无原因说明")
+            failed.append((spec, reason))
             continue
         evidence, gold_rows = None, []
         for anchor in spec["anchors"]:
@@ -171,6 +174,10 @@ def build_gold(corpus, specs, max_gold=MAX_GOLD, qid_prefix=u"r", default_site=S
                 evidence = anchor
                 # 证据占比 = 证据起点 / 行文本长度，越小代表该行越「围绕」答案
                 rows.sort(key=lambda a: a["_norm"].index(anchor) / max(len(a["_norm"]), 1))
+                prefer_num = spec.get("prefer_num")
+                if prefer_num:
+                    # 稳定排序：把现行法条行（num 命中 prefer_num）提到最前作主标签
+                    rows.sort(key=lambda a: 0 if a.get("num") == prefer_num else 1)
                 gold_rows = rows[:max_gold]
                 break
         if not gold_rows:

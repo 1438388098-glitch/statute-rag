@@ -65,6 +65,14 @@ class BuildGoldTest(unittest.TestCase):
         out, _ = build_gold(CORPUS, specs, max_gold=1)
         self.assertEqual(len(out[0]["gold_ids"]), 1)
 
+    def test_prefer_num_makes_current_law_primary(self):
+        # 同一证据句同时命中两条（模拟修正案条款与刑法正文），prefer_num 指定现行法条行
+        specs = [{"question": u"q", "url": u"http://x/7.html",
+                  "anchors": [u"用人单位拖欠劳动报酬的"], "prefer_num": u"第二条"}]
+        out, _ = build_gold(CORPUS, specs)
+        self.assertEqual(out[0]["gold_id"], 2)
+        self.assertEqual(set(out[0]["gold_ids"]), set([1, 2]))  # 集合不变，顺序变
+
 
 class LoadSpecsTest(unittest.TestCase):
     def test_loads_jsonl(self):
