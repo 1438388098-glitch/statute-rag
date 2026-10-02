@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 REQUIRED_FIELDS = ["qid", "query", "law", "num", "gold_laws", "evidence", "source_site", "source_url"]
 
-SNAPSHOT_NOTE = "本表由脚本从 gold_real_38.jsonl 生成，{date} 快照；「复核」列预填自 real38_review_status.json。"
+SNAPSHOT_NOTE = "本表由脚本从 {gold_label} 生成，{date} 快照；「复核」列预填自 {status_label}。"
 
 
 def trunc(text, limit):
@@ -80,7 +80,10 @@ def statute_label(row, status):
     return label
 
 
-def render(rows, statuses, snapshot_date, eval_doc_name):
+def render(rows, statuses, snapshot_date, eval_doc_name, gold_label=None, status_label=None):
+    gold_label = gold_label or "gold/gold_real_38.jsonl"
+    status_label = status_label or "real38_review_status.json"
+    status_links = "、".join("[gold/%s](../gold/%s)" % (s, s) for s in status_label.split("、"))
     done = [q for q, s in statuses.items() if s.get("status")]
     counts = {}
     for s in statuses.values():
@@ -96,22 +99,23 @@ def render(rows, statuses, snapshot_date, eval_doc_name):
     offset_rows = [q for q, s in statuses.items() if s.get("label_offset")]
 
     lines = []
-    lines.append("# 金标人工复核工作表（38 题）")
+    lines.append("# 金标人工复核工作表（%d 题）" % len(rows))
     lines.append("")
-    lines.append("> **用途**：本文档是 `gold/gold_real_38.jsonl`（真实问句金标）的**人工法律复核工作底稿**。"
+    lines.append("> **用途**：本文档是 `%s`（真实问句金标）的**人工法律复核工作底稿**。"
                  "金标由 LLM 对照条文核验生成（见 [real-question-eval.md](%s) 第 3 节），"
-                 "**人工法律复核尚未完成**，本表用于逐题勾选完成该复核。%s" % (eval_doc_name, progress))
+                 "**人工法律复核尚未完成**，本表用于逐题勾选完成该复核。%s" % (gold_label, eval_doc_name, progress))
     lines.append(">")
-    lines.append("> **复核结果写在 [gold/real38_review_status.json](../gold/real38_review_status.json)**"
-                 "（qid 条目的 status/reviewer/date/note 字段），再重跑本脚本——重新生成不丢人工结果。")
+    lines.append("> **复核结果写在 %s**"
+                 "（qid 条目的 status/reviewer/date/note 字段），再重跑本脚本——重新生成不丢人工结果。"
+                 % status_links)
     lines.append(">")
     lines.append("> **复核方法**（对每一题）：")
     lines.append("> 1. 点击「来源站点」链接，打开 source_url 原提问页，读原问句；")
     lines.append("> 2. 对照金标条文与 evidence 摘要，判断**金标条文是否确实回答该问**；")
     lines.append("> 3. 把结论写入状态文件该题的 status 字段：`✓`（确实回答）／`✗`（未回答或答非所问）／`存疑`（无法确定）。")
     lines.append(">")
-    lines.append("> **完成判定**：38 题全部 `✓` 即「人工复核完成」；**任何 `✗` 需修改金标并重跑评测**"
-                 "（评测命令见 [real-question-eval.md](%s) 文末）。" % eval_doc_name)
+    lines.append("> **完成判定**：%d 题全部 `✓` 即「人工复核完成」；**任何 `✗` 需修改金标并重跑评测**"
+                 "（评测命令见 [real-question-eval.md](%s) 文末）。" % (len(rows), eval_doc_name))
     lines.append(">")
     lines.append("> **⚠行标签偏移行**（%s）：金标 `num` 是语料分块行标签，与证据句所属条文的实际条号"
                  "可能不一致（分块跨条 + 双栏 PDF 解析污染，见 real-question-eval.md §3/§8）。"
@@ -147,7 +151,7 @@ def render(rows, statuses, snapshot_date, eval_doc_name):
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append(SNAPSHOT_NOTE.format(date=snapshot_date))
+    lines.append(SNAPSHOT_NOTE.format(date=snapshot_date, gold_label=gold_label, status_label=status_label))
     lines.append("")
     return "\n".join(lines)
 
@@ -155,17 +159,24 @@ def render(rows, statuses, snapshot_date, eval_doc_name):
 def main():
     repo = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
     parser = argparse.ArgumentParser(description="生成金标人工复核工作表")
-    parser.add_argument("--gold", default=os.path.join(repo, "gold", "gold_real_38.jsonl"))
+    parser.add_argument("--gold", nargs="+", default=[os.path.join(repo, "gold", "gold_real_38.jsonl")],
+                        help="金标文件（可多个，合并成一张表；用于新增批次）")
     parser.add_argument("--out", default=os.path.join(repo, "docs", "gold-review-worksheet.md"))
-    parser.add_argument("--status", default=os.path.join(repo, "gold", "real38_review_status.json"),
-                        help="复核状态文件（预填复核列，不丢人工结果）")
+    parser.add_argument("--status", nargs="+", default=[os.path.join(repo, "gold", "real38_review_status.json")],
+                        help="复核状态文件（可多个，按序合并；预填复核列，不丢人工结果）")
     parser.add_argument("--eval-doc", default="real-question-eval.md", help="评测报告文件名（同目录相对链接）")
     parser.add_argument("--date", default=datetime.date.today().isoformat(), help="快照日期")
     args = parser.parse_args()
 
-    rows = load_gold(args.gold)
-    statuses = load_status(args.status)
-    md = render(rows, statuses, args.date, args.eval_doc)
+    rows = []
+    for g in args.gold:
+        rows.extend(load_gold(g))
+    statuses = {}
+    for s in args.status:
+        statuses.update(load_status(s))
+    gold_label = "、".join("gold/" + os.path.basename(g) for g in args.gold)
+    status_label = "、".join(os.path.basename(s) for s in args.status)
+    md = render(rows, statuses, args.date, args.eval_doc, gold_label, status_label)
     with io.open(args.out, "w", encoding="utf-8", newline="\n") as f:
         f.write(md)
     filled = sum(1 for s in statuses.values() if s.get("status"))

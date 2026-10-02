@@ -69,4 +69,4 @@
 
 ---
 
-本表由脚本从 gold_real_38.jsonl 生成，2026-10-02 快照；「复核」列预填自 real38_review_status.json。
+本表由脚本从 gold/gold_real_38.jsonl 生成，2026-10-02 快照；「复核」列预填自 real38_review_status.json。
