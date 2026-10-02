@@ -56,6 +56,12 @@ HYBRID_FUSION_DEPTH = 30
 # docs/retrieval-v3-diagnosis.md §5；合成金标零回退）。
 EXPANSION_CHANNEL_WEIGHT = 2.5
 
+# 融合通道的稳定标识。只用于诊断与界面展示「这条命中的是哪些通道」，
+# 不参与打分；改动这些字符串不影响任何评测数字。
+CHANNEL_BM25 = "bm25"        # 原查询字符二元组 BM25
+CHANNEL_EXPANSION = "expand"  # 同义词典扩展后的 BM25
+CHANNEL_LIKE = "like"        # 原查询精确子串
+
 
 def _normalize(text):
     """检索前归一化：压缩空白。"""
@@ -229,19 +235,56 @@ class HybridRetriever(object):
                           else load_synonyms()) if use_expansion else None
 
     def _channels(self, query, depth):
-        """返回 [(结果列表, 通道权重), ...]：原查询 BM25 / 扩展查询 BM25 / LIKE。
+        """返回 [(通道名, 结果列表, 通道权重), ...]：原查询 BM25 / 扩展查询 BM25 / LIKE。
 
         扩展路无命中（既无词典命中也无数字读法变体）时整体省略，此时
         hybrid 退化为原查询 BM25 + LIKE 双路等权，与 v0.1 行为一致。
+        通道名是稳定标识（bm25 / expand / like），供 recall_with_trace
+        交代命中来源；不参与打分。
         """
-        channels = [(self.bm25.search(query, k=depth), 1.0),
-                    (self.like.search(query, k=depth), 1.0)]
+        channels = [(CHANNEL_BM25, self.bm25.search(query, k=depth), 1.0),
+                    (CHANNEL_LIKE, self.like.search(query, k=depth), 1.0)]
         if self._synonyms:
             expanded = expand_query(query, self._synonyms)
             if expanded != query:
-                channels.insert(1, (self.bm25.search(expanded, k=depth),
+                channels.insert(1, (CHANNEL_EXPANSION,
+                                    self.bm25.search(expanded, k=depth),
                                     EXPANSION_CHANNEL_WEIGHT))
         return channels
+
+    def recall_with_trace(self, query, depth=HYBRID_FUSION_DEPTH):
+        """融合排名 + 命中来源轨迹（诊断与界面用）。
+
+        返回 (ranking, trace)。ranking 与 recall 逐位等价——两者走同一份
+        融合结果，trace 只是把「每条命中来自哪些通道」额外记下来，因此
+        界面看到的排名与评测看到的排名不可能不一致。
+
+        trace 形如：
+            {"channels": ["bm25", "expand", "like"],
+             "expanded": "<扩展路实际检索的串，无扩展时等于原查询>",
+             "hits": {条文 id: ["bm25", "like"], ...}}
+        """
+        channels = self._channels(query, depth)
+        hits = {}
+        for name, results, _weight in channels:
+            for cite in results:
+                names = hits.setdefault(cite["id"], [])
+                if name not in names:
+                    names.append(name)
+        ranking = rrf_fuse([c for _n, c, _w in channels], k=None,
+                           weights=[w for _n, _c, w in channels])
+        if self._reranker is not None:
+            ranking = self._reranker.rerank(query, ranking, k=len(ranking))
+            if not ranking:
+                # 契约是「重排只动顺序（可截断）、不可清空」：空排名会让
+                # 强制引用静默失效，宁可显式失败也不静默吞掉。
+                raise ValueError("reranker 返回空列表：重排器不得清空融合排名")
+        expanded = expand_query(query, self._synonyms) if self._synonyms else query
+        return ranking, {
+            "channels": [n for n, _c, _w in channels],
+            "expanded": expanded,
+            "hits": hits,
+        }
 
     def recall(self, query, depth=HYBRID_FUSION_DEPTH):
         """固定通道深度召回：返回完整 RRF 融合排名，不按 k 截断。
@@ -250,15 +293,7 @@ class HybridRetriever(object):
         什么」，截断位置决定「呈现多少」，两者混在 search(k) 里会让
         Recall@k 各点变成不同检索配置下的数字。
         """
-        channels = self._channels(query, depth)
-        ranking = rrf_fuse([c for c, _w in channels], k=None,
-                           weights=[w for _c, w in channels])
-        if self._reranker is not None:
-            ranking = self._reranker.rerank(query, ranking, k=len(ranking))
-            if not ranking:
-                # 契约是「重排只动顺序（可截断）、不可清空」：空排名会让
-                # 强制引用静默失效，宁可显式失败也不静默吞掉。
-                raise ValueError("reranker 返回空列表：重排器不得清空融合排名")
+        ranking, _trace = self.recall_with_trace(query, depth)
         return ranking
 
     def search(self, query, k=5):

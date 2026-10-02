@@ -27,6 +27,23 @@ python scripts/search_cli.py --corpus demo_corpus/corpus.jsonl "台账公示" --
 
 可选：作为包安装 `pip install .`（同义词典随包分发为 package-data；`import statute_rag; statute_rag.__version__`）。
 
+## Web 界面（app 样子，零前端依赖）
+
+```bash
+python scripts/app.py                                      # 读 data/corpus_v3.jsonl
+python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时先跑演示语料
+```
+
+起一个本机服务（缺省 `http://127.0.0.1:8787/`）并自动开浏览器。界面是一个搜索框加结果卡片：法名 + 条号 + 原文，命中片段用蓝色下划线标出；每条还标出**来自哪几个通道**（字面 / 扩写 / 原句），口语被词典改写时把改写后的检索串一并显示——「为什么这条被检出来」在界面上是看得见的，不是黑箱。
+
+三条纪律：
+
+- **界面与评测共用同一个 HybridRetriever 实例、同一份融合排名**——命中来源轨迹由 `HybridRetriever.recall_with_trace()` 给出（只读不改分，`recall` 就由它返回，逐位等价），所以「展示层和评测层是同一份排名」是结构上的事实而不是一句承诺，不存在「演示版另一套逻辑」；
+- 前端是 [app/index.html](app/index.html) 单文件，**无构建步骤、无 npm、无外链脚本与外部字体**，断网可用；
+- 服务默认只绑 `127.0.0.1`，且不映射任意文件路径（只有内嵌的页面与 `/api/meta`、`/api/search` 两个 JSON 接口，没有目录穿越面）。对局域网或公网开放要显式传 `--host` 并自行加反向代理——本项目默认不做这件事。
+
+> 语料不随仓库分发，界面要在**有语料的地方**跑。界面上的数字（条数、部数、建索引耗时、同义词典条目数）全部读自语料与代码本身，不写死。
+
 ## 数字（当前口径 v3 语料 25,273 条 / 432 部；两套金标并列）
 
 > **口径变更声明**：2026-10 语料按法考汇编对账补全（14,212 → 25,273 条），**当前口径以 v3 语料为准**。语料扩容会让同一批老问句的 R@5 变化（hybrid 真实 R@5 一度从 v1 的 44.7% 降到 31.6%），经检索侧重标定后回到 44.7%。下表是 v3 当前口径；**v1 / v2 是历史口径**（见文末并列表），请勿与当前数字混读。诊断、逐题迁移与全网格见 [docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md)。
@@ -88,9 +105,10 @@ statute_rag/          核心包（纯标准库）
   ├── gold.py             合成金标生成（全库唯一短语约束）
   ├── eval_harness.py     Recall@k / MRR / 多 k 评测 / 排名分布
   └── interfaces.py       v0.2 Reranker 接口约定（模型后接）
-scripts/              命令行：run_eval、search_cli、bench、gen_eval_report、
-                      check_doc_numbers、make_demo_corpus、ablate_retrieval 等
-tests/                108 例单测（unittest，临时目录自造语料）
+scripts/              CLI 与 Web 服务：run_eval、search_cli、app（Web 界面）、bench、
+                      gen_eval_report、check_doc_numbers、make_demo_corpus、ablate_retrieval 等
+app/index.html        Web 界面单页（无构建、无外链、断网可用）
+tests/                119 例单测（unittest，临时目录自造语料）
 gold/                 入库金标 + 人工复核状态
 docs/                 生成的评测报告、metrics.json、实验记录
 ```
@@ -98,6 +116,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 关键设计决策：
 
 - **唯一短语约束**：最初金标用「IDF 最高短语」，实测 74% 的查询短语跨条文复用（法条公式化表述），召回上限失真。改为「全库唯一」约束（倒排交集精确计数 df==1）后，每题只有一个正确答案。
+- **命中来源可查（`recall_with_trace`）**：融合排名附带「每条命中来自哪些通道」，轨迹只读、不参与打分，`recall` 直接由它返回（逐位等价）。Web 界面据此解释「为什么这条被检出来」，同时让「展示层看到的排名就是评测时的那份排名」变成结构上的事实——想分叉也分不了。
 - **质检宁可少导入**：PDF 双栏解析存在串行乱序污染（见「已知失败案例」），质检只过滤可确定性识别的污染，乱序检测是开放问题。
 - **查询扩展只增不改（v0.1.1）**：真实问句是口语（坐牢/看望/社保/房东），条文是法言法语（服刑/会见/社会保险/出租人），词法通道无从命中。解法是数据化的领域词典（`statute_rag/synonyms.json`，127 词条通用映射）+ 追加式查询扩展 + RRF 多路融合：**原查询整体保留**，扩展表述另开一路检索，无命中自动省略。防过拟合约束与逐轮消融（含无增益即移除的负结果）见 [docs/retrieval-improvement.md](docs/retrieval-improvement.md)。
 - **通道深度与 k 解耦**：通道深度是检索配置，不是返回条数。`search(k)` 用固定深度（已发布数字的口径）；跨 k 对比走 `recall(query, depth)`——同一份排名逐 k 截取（`evaluate_multi_k`）。真实金标实测（当前 v3 口径）Recall@5 44.7% → Recall@30 81.6%：**大多数真实问题其实已经检到，输在排序**——这是 v0.2 重排通道的量化立项依据。
@@ -135,7 +154,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 
 3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
 
-- 单元测试 108 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。
+- 单元测试 119 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。
 
 ```bash
 # 30 秒检索演示（需语料）

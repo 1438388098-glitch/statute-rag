@@ -28,6 +28,23 @@ python scripts/search_cli.py --corpus demo_corpus/corpus.jsonl "台账公示" --
 
 Optionally install as a package: `pip install .` (the synonym dictionary ships as package data; `import statute_rag; statute_rag.__version__`).
 
+## Web app (an app-style UI, zero frontend dependencies)
+
+```bash
+python scripts/app.py                                      # reads data/corpus_v3.jsonl
+python scripts/app.py --corpus demo_corpus/corpus.jsonl    # demo corpus if you have no real one
+```
+
+Starts a local server (default `http://127.0.0.1:8787/`) and opens a browser. The UI is a search box plus result cards: law name, article number, full text, with the matched fragments underlined in blue. Every result also shows **which channels hit it** (literal / expanded / exact-substring), and when a colloquial query was rewritten by the dictionary the actual search string is displayed — so "why did this article come back" is visible rather than a black box.
+
+Three rules hold this together:
+
+- **The UI and the evaluation share one `HybridRetriever` instance and one fused ranking.** The hit-source trace comes from `HybridRetriever.recall_with_trace()` — read-only, never scored; `recall` is literally implemented on top of it (bit-for-bit identical). So "the ranking the UI shows is the ranking we evaluate" is a structural fact, not a promise, and there is no separate demo logic to drift.
+- The frontend is a single file, [app/index.html](app/index.html): **no build step, no npm, no external scripts or webfonts**, works offline.
+- The server binds `127.0.0.1` only and maps no filesystem paths (just the embedded page plus two JSON endpoints, `/api/meta` and `/api/search`), so there is no directory-traversal surface. Exposing it to a LAN or the internet requires an explicit `--host` plus your own reverse proxy — not something this project does by default.
+
+> The corpus is not distributed with the repo, so run the app **where the corpus lives**. Every number the UI shows (article/law counts, index build time, dictionary size) is read from the corpus and code, never hardcoded.
+
 ## The numbers (current scope: v3 corpus, 25,273 articles / 432 laws; two gold sets side by side)
 
 > **Scope-change notice**: in 2026-10 the local corpus was completed against a bar-exam statute compilation (14,212 → 25,273 articles), so **the current scope is the v3 corpus**. Enlarging the corpus changes R@5 on the same old questions (hybrid real R@5 fell from 44.7% on v1 to 31.6%), and retrieval-side recalibration brought it back to 44.7%. The table below is the v3 current scope; **v1 / v2 are historical scopes** (see the comparison below) and must not be mixed with it. Diagnosis, per-question migration and full grids: [docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md).
@@ -93,9 +110,10 @@ statute_rag/          core package (stdlib only)
   ├── gold.py             synthetic gold generation (unique-phrase constraint)
   ├── eval_harness.py     Recall@k / MRR / multi-k / rank histograms
   └── interfaces.py       Reranker contract for v0.2 (model plugs in later)
-scripts/              CLIs: run_eval, search_cli, bench, gen_eval_report,
-                      check_doc_numbers, make_demo_corpus, ablate_retrieval, …
-tests/                108 unit tests (unittest, no fixtures beyond tmpdirs)
+scripts/              CLIs and the web server: run_eval, search_cli, app (UI), bench,
+                      gen_eval_report, check_doc_numbers, make_demo_corpus, ablate_retrieval, …
+app/index.html        Single-page UI (no build, no external assets, works offline)
+tests/                119 unit tests (unittest, no fixtures beyond tmpdirs)
 gold/                 committed gold sets + human-review status
 docs/                 generated eval report, metrics.json, experiment logs
 ```
@@ -137,7 +155,7 @@ Reproducing — three honest tiers:
 
 3. **Your own Chinese statute corpus**: the retrieval trio, synthetic gold and quality gate work out of the box; the committed `gold_real_38.jsonl` binds `gold_id`s to our import's chunk-row ids, so its numbers cannot be re-run on a different corpus — reuse the 38 questions by rebuilding row ids with `build_real_gold.py` (questions and source URLs carry over).
 
-- Unit tests: `python -m unittest discover -s tests` (108 cases). Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
+- Unit tests: `python -m unittest discover -s tests` (119 cases). Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
 
 ## Known failure cases
 

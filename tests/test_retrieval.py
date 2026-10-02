@@ -7,6 +7,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from statute_rag.retrieval import (
+    CHANNEL_BM25, CHANNEL_EXPANSION, CHANNEL_LIKE,
     EXPANSION_CHANNEL_WEIGHT, BM25Retriever, HybridRetriever, LikeRetriever,
     char_ngrams, rrf_fuse,
 )
@@ -124,22 +125,50 @@ class ChannelWeightWiringTest(unittest.TestCase):
     def test_expansion_channel_carries_weight(self):
         h = HybridRetriever(CORPUS)
         channels = h._channels("坐牢要多久", 30)  # 「坐牢」在词典里 → 扩展路存在
-        weights = [w for _c, w in channels]
+        weights = [w for _n, _c, w in channels]
         self.assertEqual(len(channels), 3)
         self.assertEqual(weights[0], 1.0)
         self.assertEqual(weights[1], EXPANSION_CHANNEL_WEIGHT)
         self.assertGreater(EXPANSION_CHANNEL_WEIGHT, 1.0)
         self.assertEqual(weights[2], 1.0)
+        self.assertEqual([n for n, _c, _w in channels],
+                         [CHANNEL_BM25, CHANNEL_EXPANSION, CHANNEL_LIKE])
 
     def test_no_expansion_falls_back_to_equal_weights(self):
         h = HybridRetriever(CORPUS)
         channels = h._channels("正当防卫", 30)  # 词典与数字读法均不命中
-        self.assertEqual([w for _c, w in channels], [1.0, 1.0])
+        self.assertEqual([w for _n, _c, w in channels], [1.0, 1.0])
+        self.assertEqual([n for n, _c, _w in channels], [CHANNEL_BM25, CHANNEL_LIKE])
 
     def test_use_expansion_off_keeps_two_equal_channels(self):
         h = HybridRetriever(CORPUS, use_expansion=False)
         channels = h._channels("坐牢要多久", 30)
-        self.assertEqual([w for _c, w in channels], [1.0, 1.0])
+        self.assertEqual([w for _n, _c, w in channels], [1.0, 1.0])
+
+
+class RecallWithTraceTest(unittest.TestCase):
+    """命中来源轨迹：排名与 recall 逐位等价，轨迹只读不改分。"""
+
+    def test_trace_ranking_matches_recall_bit_for_bit(self):
+        h = HybridRetriever(CORPUS)
+        query = "坐牢要多久"  # 走扩展路，轨迹里应出现 expand
+        ranking, trace = h.recall_with_trace(query, 30)
+        self.assertEqual(_ids(ranking), _ids(h.recall(query, 30)))
+        self.assertIn(CHANNEL_EXPANSION, trace["channels"])
+
+    def test_trace_lists_hit_channels_per_article(self):
+        h = HybridRetriever(CORPUS)
+        _ranking, trace = h.recall_with_trace("正当防卫", 30)
+        # 词典不命中 → 只剩原查询 BM25 与精确子串两路
+        self.assertEqual(trace["channels"], [CHANNEL_BM25, CHANNEL_LIKE])
+        self.assertEqual(trace["expanded"], "正当防卫")
+        self.assertIn(1, trace["hits"])          # 第一条含「正当防卫」
+        self.assertIn(CHANNEL_BM25, trace["hits"][1])
+
+    def test_trace_never_invents_ids_outside_ranking(self):
+        h = HybridRetriever(CORPUS)
+        ranking, trace = h.recall_with_trace("罚款", 30)
+        self.assertTrue(set(trace["hits"]).issubset(set(_ids(ranking))))
 
 
 class HybridRetrieverTest(unittest.TestCase):

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>法条检索 · statute-rag</title>
+<meta name="description" content="输入一句大白话，拿回最相关的法条原文与出处。词法检索底座，只给条文原文，不给法律意见。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23faf9f6'/%3E%3Crect x='2' y='2' width='5' height='5' fill='%232745f0'/%3E%3Crect x='9' y='9' width='5' height='5' fill='%2317160f'/%3E%3C/svg%3E">
+<!--
+  设计语言与站点一致（瑞士风）：暖白纸面 + 近黑 + 单一强调蓝，
+  全站直角、无圆角、无渐变、无彩色侧条，层级靠字重与留白。
+  刻意不引外部字体与任何外链脚本：这是本机工具，断网也要能用；
+  字体走本地栈（装了 Archivo / Space Mono 就用，没装就退到系统字）。
+-->
+<style>
+  :root {
+    --bg: #faf9f6;
+    --bg-soft: #f1efe8;
+    --surface: #ffffff;
+    --ink: #17160f;
+    --text: #23221b;
+    --text-muted: #5f5e55;
+    --accent: #2745f0;
+    --border: #e5e3db;
+    --border-strong: #17160f;
+    --code-bg: #f1efe8;
+    --shadow-card: 0 14px 30px -22px rgba(23, 22, 15, 0.35);
+    --font-display: 'Archivo', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'Space Mono', ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+    --maxw: 60rem;
+  }
+  * { box-sizing: border-box; }
+  html { overflow-x: clip; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  a { color: var(--accent); }
+
+  /* 顶栏：白面 + 2px 墨色底线，与站点 section-head 同族 */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border-strong);
+  }
+  .topbar-in {
+    max-width: var(--maxw); margin-inline: auto; padding: 0.7rem 1.25rem;
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .mark { width: 0.85rem; height: 0.85rem; background: var(--accent); flex: none; }
+  .brand { font-weight: 800; font-size: 1.02rem; letter-spacing: -0.01em; }
+  .brand-en { font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+  .topbar-spacer { flex: 1; }
+  .badge {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
+    border: 1px solid var(--border); padding: 0.15rem 0.5rem; white-space: nowrap;
+  }
+
+  main { max-width: var(--maxw); margin-inline: auto; padding: 2rem 1.25rem 4rem; }
+
+  /* 搜索区 */
+  .search-row { display: flex; gap: 0; align-items: stretch; }
+  #q {
+    flex: 1; min-width: 0;
+    font-family: var(--font-display); font-size: 1.12rem; font-weight: 500;
+    color: var(--text); background: var(--surface);
+    border: 1.5px solid var(--border-strong); border-right: none; border-radius: 0;
+    padding: 0.85rem 1rem;
+  }
+  #q::placeholder { color: #9c9a90; font-weight: 400; }
+  #q:focus { outline: none; }
+  .search-row:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #go {
+    flex: none; background: var(--ink); color: var(--bg); font-weight: 700;
+    border: 1.5px solid var(--ink); border-radius: 0; padding: 0 1.6rem;
+  }
+  #go:hover { opacity: 0.88; }
+  #go[disabled] { opacity: 0.45; cursor: default; }
+
+  .hint { margin: 0.6rem 0 0; font-size: 0.84rem; color: var(--text-muted); }
+  .hint kbd {
+    font-family: var(--font-mono); font-size: 0.74rem; border: 1px solid var(--border);
+    background: var(--code-bg); padding: 0.05rem 0.3rem;
+  }
+  .samples { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0; padding: 0; }
+  .samples button {
+    font-size: 0.84rem; border: 1px solid var(--border); background: var(--surface);
+    padding: 0.25rem 0.6rem; color: var(--text-muted);
+  }
+  .samples button:hover { border-color: var(--border-strong); color: var(--ink); }
+
+  /* 状态行 */
+  .status {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.9rem;
+    border-bottom: 2px solid var(--border-strong); padding-bottom: 0.55rem;
+    margin: 2rem 0 0.9rem; font-size: 0.86rem; color: var(--text-muted);
+  }
+  .status .lead { color: var(--text); font-weight: 700; }
+  .status .spacer { flex: 1; }
+  .expansion { margin: 0 0 1rem; }
+  .expansion code {
+    display: block; font-family: var(--font-mono); font-size: 0.78rem;
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 0.5rem 0.7rem; word-break: break-all; color: var(--text-muted);
+  }
+  .expansion .tag { font-size: 0.78rem; color: var(--accent); font-weight: 700; }
+
+  /* 结果卡片：直角白面，hover/选中靠边框加深 + 投影，不用彩色侧条 */
+  .results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.85rem; }
+  .card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    padding: 1rem 1.1rem; transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+  .card:hover, .card.active { border-color: var(--border-strong); box-shadow: var(--shadow-card); }
+  .card-head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+  .rank {
+    font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700;
+    background: var(--accent); color: #fff; padding: 0.1rem 0.42rem; flex: none;
+  }
+  .law { font-weight: 800; letter-spacing: -0.005em; }
+  .num { font-family: var(--font-mono); font-size: 0.84rem; color: var(--text-muted); }
+  .card-head .spacer { flex: 1; }
+  .chan { display: flex; gap: 0.28rem; }
+  .chan span {
+    font-size: 0.68rem; font-weight: 700; color: var(--accent);
+    border: 1px solid var(--accent); padding: 0 0.3rem; line-height: 1.5;
+  }
+  .chan span.plain { color: var(--text-muted); border-color: var(--border); font-weight: 600; }
+  .score { font-family: var(--font-mono); font-size: 0.72rem; color: #a3a29a; }
+  .text {
+    margin: 0.55rem 0 0; font-size: 0.95rem; color: var(--text);
+    display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+    white-space: pre-wrap;
+  }
+  .card.open .text { display: block; overflow: visible; }
+  mark { background: none; color: inherit; font-weight: 700; border-bottom: 2px solid var(--accent); }
+  .card-foot { display: flex; align-items: baseline; gap: 0.8rem; margin-top: 0.6rem; }
+  .card-foot .id { font-family: var(--font-mono); font-size: 0.7rem; color: #a3a29a; }
+  .toggle { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+  .toggle:hover { text-decoration: underline; }
+
+  /* 空态 / 无命中 / 出错 */
+  .panel { border: 1.5px solid var(--border); background: var(--surface); padding: 1.4rem 1.5rem; }
+  .panel h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.5rem; }
+  .panel p { margin: 0.4rem 0; font-size: 0.9rem; color: var(--text-muted); }
+  .panel ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.9rem; color: var(--text-muted); }
+  .panel ul li { margin: 0.25rem 0; }
+  .panel ul li::marker { color: var(--accent); }
+  .panel code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--code-bg);
+    border: 1px solid var(--border); padding: 0.05rem 0.3rem; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 1rem; margin: 0.8rem 0 0;
+    font-size: 0.86rem; }
+  .kv dt { color: var(--text-muted); }
+  .kv dd { margin: 0; }
+
+  .skeleton { border: 1.5px solid var(--border); background: var(--surface); padding: 1rem 1.1rem; }
+  .bar { height: 0.7rem; background: var(--bg-soft); margin-bottom: 0.5rem; animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  footer {
+    max-width: var(--maxw); margin-inline: auto; padding: 1.2rem 1.25rem 3rem;
+    border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-muted);
+  }
+  footer p { margin: 0.3rem 0; }
+  @media (max-width: 34rem) {
+    #go { padding: 0 1rem; }
+    .card-head .spacer { display: none; }
+    .score { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="brand">法条检索</span>
+    <span class="brand-en">statute-rag</span>
+    <span class="topbar-spacer"></span>
+    <span class="badge" id="badge">语料加载中…</span>
+  </div>
+</header>
+
+<main>
+  <form class="search-row" id="form" role="search" autocomplete="off">
+    <input id="q" type="search" name="q" placeholder="用大白话问，比如：公司拖欠工资多久算违法"
+           aria-label="检索问题" spellcheck="false">
+    <button id="go" type="submit">检索</button>
+  </form>
+  <p class="hint">
+    按 <kbd>/</kbd> 聚焦输入框，<kbd>Esc</kbd> 清空，<kbd>↑</kbd><kbd>↓</kbd> 在结果间移动。
+    这是词法检索：按字面与同义词找条文，不做语义理解。
+  </p>
+  <ul class="samples" id="samples"></ul>
+
+  <div id="out" aria-live="polite"></div>
+</main>
+
+<footer>
+  <p>按 25,273 条 / 432 部法条检索原始文本；命中包含出处（法律名 + 条号 + 库里编号），可回跳核对。</p>
+  <p>这里只做检索与呈现，给的是条文原文，不是法律意见；真实问句 Recall@5 44.7%，剩余失败逐题公开在仓库文档里。</p>
+  <p>注：语料里 14,212 / 25,273 行来自公报页块，一行可能含多条（条号以正文为准），这是已知的解析遗留；检索按行返回，不做二次切分。</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var SAMPLES = [
+    "公司拖欠工资多久算违法",
+    "离婚冷静期是法律规定的吗",
+    "高空抛物砸到人该由谁负责",
+    "正当防卫明显超过必要限度",
+    "坐牢要多久",
+    "一方不想离婚能离婚吗"
+  ];
+
+  // 通道标识 → 界面标签。与 statute_rag/retrieval.py 里的 CHANNEL_* 常量一一对应。
+  var CHAN_LABEL = { bm25: "字面", expand: "扩写", like: "原句" };
+
+  var el = {
+    form: document.getElementById("form"),
+    q: document.getElementById("q"),
+    go: document.getElementById("go"),
+    out: document.getElementById("out"),
+    badge: document.getElementById("badge"),
+    samples: document.getElementById("samples")
+  };
+
+  var state = { k: 10, inflight: null, results: [], active: -1, lastQuery: "" };
+
+  SAMPLES.forEach(function (s) {
+    var li = document.createElement("li");
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = s;
+    b.addEventListener("click", function () {
+      el.q.value = s;
+      el.q.focus();
+      run(s);
+    });
+    li.appendChild(b);
+    el.samples.appendChild(li);
+  });
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // 找出问题与条文之间长度 ≥2 的公共片段：这正是字面通道实际匹配到的东西，
+  // 高亮它就是「为什么这条被检出来」的可见证据。不用分词器（中文没空格），
+  // 逐起点延伸取最长公共子串；随后按「长的优先、互不重叠」挑有限几段——
+  // 否则「公司」「工资」这类短词在千字公报块里反复出现，整段会被点花。
+  function matchSpans(text, query, limit) {
+    var cands = [];
+    var i, j, k;
+    for (i = 0; i < query.length; i++) {
+      for (j = 0; j < text.length; j++) {
+        k = 0;
+        while (i + k < query.length && j + k < text.length && query.charAt(i + k) === text.charAt(j + k)) {
+          k++;
+        }
+        if (k >= 2) { cands.push([j, j + k]); }
+      }
+    }
+    if (!cands.length) { return cands; }
+    cands.sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]) || a[0] - b[0]; });
+    var picked = [];
+    for (i = 0; i < cands.length && picked.length < limit; i++) {
+      var s = cands[i];
+      var free = true;
+      for (j = 0; j < picked.length; j++) {
+        if (s[0] < picked[j][1] && picked[j][0] < s[1]) { free = false; break; }
+      }
+      if (free) { picked.push(s); }
+    }
+    picked.sort(function (a, b) { return a[0] - b[0]; });
+    return picked;
+  }
+
+  function highlight(text, query) {
+    text = String(text);
+    query = String(query || "").trim();
+    var spans = query ? matchSpans(text, query, 10) : [];
+    if (!spans.length) { return esc(text); }
+    var out = "";
+    var pos = 0;
+    spans.forEach(function (s) {
+      out += esc(text.slice(pos, s[0])) + "<mark>" + esc(text.slice(s[0], s[1])) + "</mark>";
+      pos = s[1];
+    });
+    return out + esc(text.slice(pos));
+  }
+
+  function channelBadges(list) {
+    return (list || []).map(function (c) {
+      var label = CHAN_LABEL[c] || c;
+      var cls = c === "expand" || c === "like" || c === "bm25" ? "chip" : "chip plain";
+      return '<span class="' + cls + '">' + esc(label) + "</span>";
+    }).join("");
+  }
+
+  function card(r, query) {
+    var long = r.text.length > 240;
+    return '<li class="card" data-i="' + r.rank + '">' +
+      '<div class="card-head">' +
+        '<span class="rank">' + r.rank + "</span>" +
+        '<span class="law" title="' + esc(r.law) + '">' + esc(r.law) + "</span>" +
+        '<span class="num">' + esc(r.num) + "</span>" +
+        '<span class="spacer"></span>' +
+        '<span class="chan">' + channelBadges(r.channels) + "</span>" +
+        '<span class="score">' + Number(r.score).toFixed(4) + "</span>" +
+      "</div>" +
+      '<p class="text">' + highlight(r.text, query) + "</p>" +
+      '<div class="card-foot">' +
+        '<span class="id mono">id=' + esc(r.id) + "</span>" +
+        (long ? '<button type="button" class="toggle">展开全文</button>' : "") +
+      "</div>" +
+    "</li>";
+  }
+
+  function legend(channels) {
+    var names = (channels || []).map(function (c) { return CHAN_LABEL[c] || c; });
+    return "本次启用的通道：" + names.join(" / ");
+  }
+
+  function renderResults(data) {
+    var head = '<div class="status">' +
+      '<span class="lead">显示前 ' + data.results.length + " 条</span>" +
+      "<span>候选池 " + data.candidates + " 条（每路取前 " + data.depth + " 名求并集）</span>" +
+      "<span>用时 " + data.took_ms + " ms</span>" +
+      '<span class="spacer"></span>' +
+      "<span>" + esc(legend(data.channels)) + "</span>" +
+      (data.truncated ? "<span>查询已截断到 " + data.query.length + " 字</span>" : "") +
+    "</div>";
+
+    var html = head;
+    if (data.expanded && data.expanded !== data.query) {
+      html += '<div class="expansion"><span class="tag">同义词典扩写</span>' +
+        "<code>" + esc(data.expanded) + "</code></div>";
+    }
+    html += '<ul class="results">' + data.results.map(function (r) {
+      return card(r, data.query);
+    }).join("") + "</ul>";
+    el.out.innerHTML = html;
+    state.results = Array.prototype.slice.call(el.out.querySelectorAll(".card"));
+    state.active = -1;
+    bindCards();
+  }
+
+  function bindCards() {
+    state.results.forEach(function (li) {
+      li.addEventListener("click", function (ev) {
+        if (ev.target.classList.contains("toggle")) { return; }
+        setActive(state.results.indexOf(li));
+      });
+      var t = li.querySelector(".toggle");
+      if (t) {
+        t.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          var open = li.classList.toggle("open");
+          t.textContent = open ? "收起" : "展开全文";
+        });
+      }
+    });
+  }
+
+  function setActive(i) {
+    state.results.forEach(function (li) { li.classList.remove("active"); });
+    state.active = i;
+    if (i < 0 || i >= state.results.length) { return; }
+    var li = state.results[i];
+    li.classList.add("active");
+    li.scrollIntoView({ block: "nearest" });
+  }
+
+  function renderEmpty() {
+    var kind = el.q.value.trim()
+      ? "没有命中任何条文。"
+      : "输入一句话就能查。";
+    el.out.innerHTML = '<div class="panel"><h2>' + kind + "</h2>" +
+      "<p>这是一个词法检索底座（字符二元组 BM25 + 同义词典扩展 + 精确子串，三路融合），不是语义检索：<strong>换一组写法、或直接给出关键法律词汇，命中率会明显不同</strong>。</p>" +
+      "<ul>" +
+        "<li>口语词可以试，比如「坐牢」「拖欠工资」——词典会把它们改写成法条用词再检一路；</li>" +
+        "<li>问题里有法条原句片段时，精确子串通道会直接命中；</li>" +
+        "<li>纯场景描述、没有共同词汇的问法，现在检不到——语义通道在 v0.2 路线图上。</li>" +
+      "</ul>" +
+      "<dl class=\"kv\" id=\"meta-kv\"></dl>" +
+    "</div>";
+  }
+
+  function renderLoading() {
+    var s = "";
+    for (var i = 0; i < 3; i++) {
+      s += '<div class="skeleton"><div class="bar" style="width:' + (60 - i * 12) + '%"></div>' +
+           '<div class="bar" style="width:' + (92 - i * 6) + '%"></div>' +
+           '<div class="bar" style="width:' + (40 + i * 10) + '%"></div></div>';
+    }
+    el.out.innerHTML = s;
+  }
+
+  function renderError(msg) {
+    el.out.innerHTML = '<div class="panel"><h2>查不了</h2><p>' + esc(msg) + "</p>" +
+      "<p>如果服务已经停了，重新跑 <code>python scripts/app.py</code> 再刷新。</p></div>";
+  }
+
+  function fillMeta() {
+    fetch("/api/meta").then(function (r) { return r.json(); }).then(function (m) {
+      el.badge.textContent = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
+      var kv = document.getElementById("meta-kv");
+      if (kv) {
+        kv.innerHTML =
+          "<dt>语料</dt><dd class=\"mono\">" + esc(m.corpus.path) + "　" +
+            m.corpus.articles.toLocaleString() + " 条 / " + m.corpus.laws + " 部</dd>" +
+          "<dt>检索</dt><dd>" + esc(m.retriever) + "</dd>" +
+          "<dt>参数</dt><dd class=\"mono\">融合深度 " + m.fusion_depth +
+            "　同义词典 " + m.synonym_entries + " 条　建索引 " + m.build_seconds + " 秒</dd>";
+      }
+    }).catch(function () {
+      el.badge.textContent = "元信息不可用";
+    });
+  }
+
+  function run(query) {
+    var q = (query || "").trim();
+    if (!q) { renderEmpty(); return; }
+    state.lastQuery = q;
+    if (state.inflight) { state.inflight.abort(); }
+    var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    state.inflight = ctl;
+    el.go.disabled = true;
+    renderLoading();
+    var url = "/api/search?q=" + encodeURIComponent(q) + "&k=" + state.k;
+    fetch(url, ctl ? { signal: ctl.signal } : undefined).then(function (r) {
+      return r.json().then(function (body) { return { ok: r.ok, body: body }; });
+    }).then(function (res) {
+      if (res.ok) { renderResults(res.body); }
+      else { renderError(res.body && res.body.error ? res.body.error : "服务返回了错误"); }
+    }).catch(function (err) {
+      if (err && err.name === "AbortError") { return; }
+      renderError("连不上本地服务（" + (err && err.message ? err.message : "网络错误") + "）");
+    }).then(function () {
+      el.go.disabled = false;
+      state.inflight = null;
+    });
+  }
+
+  var timer = null;
+  el.q.addEventListener("input", function () {
+    if (timer) { clearTimeout(timer); }
+    var v = el.q.value;
+    timer = setTimeout(function () { run(v); }, 260);
+  });
+
+  el.form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (timer) { clearTimeout(timer); }
+    run(el.q.value);
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    var typing = document.activeElement === el.q;
+    if (ev.key === "/" && !typing) {
+      ev.preventDefault();
+      el.q.focus();
+      el.q.select();
+      return;
+    }
+    if (ev.key === "Escape") {
+      if (el.q.value) {
+        el.q.value = "";
+        renderEmpty();
+        fillMeta();
+      }
+      el.q.blur();
+      return;
+    }
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      if (!state.results.length) { return; }
+      ev.preventDefault();
+      var next = state.active + (ev.key === "ArrowDown" ? 1 : -1);
+      if (next < 0) { next = 0; }
+      if (next >= state.results.length) { next = state.results.length - 1; }
+      setActive(next);
+      return;
+    }
+    if (ev.key === "Enter" && state.active >= 0 && state.results[state.active]) {
+      var li = state.results[state.active];
+      var t = li.querySelector(".toggle");
+      if (t) { t.click(); }
+    }
+  });
+
+  renderEmpty();
+  fillMeta();
+  el.q.focus();
+})();
+</script>
+</body>
+</html>

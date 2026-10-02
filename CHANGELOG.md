@@ -16,6 +16,8 @@
 - `scripts/gen_eval_report.py` 支持 `--history LABEL=PATH`，把三版语料并列表写进评测报告（历史语料不进 metrics.json）；`scripts/ablate_retrieval.py` 支持多云料（`--corpus label=path` 可重复）、多 k（`--ks`）与参数全表（`--b-scan` / `--weight-scan`）
 
 ### Added
+- **Web 界面（app 样子）**：`scripts/app.py`（零依赖本机 HTTP 服务）+ `app/index.html`（单文件前端，无构建、无 npm、无外链脚本与外部字体，断网可用）。输入问题 → 条文原文 + 出处；命中片段高亮、逐条标注命中通道（字面 / 扩写 / 原句）、词典改写时显示实际送检的检索串。界面数字全部读自语料本身。默认只绑 `127.0.0.1`，不映射任意文件路径（无目录穿越面）；对公网开放需显式 `--host` 并自加反向代理
+- **`HybridRetriever.recall_with_trace()`**：融合排名 + 「每条命中来自哪些通道」的只读轨迹；`recall` 改为由它返回（逐位等价），使界面解释命中与评测口径同源——展示层与评测层不可能看到两份排名
 - **度量底座**：HybridRetriever 通道深度与 k 解耦（`recall(query, depth)` 完整融合排名 → 截 k）；`evaluate_multi_k` 同一份排名算 Recall@5/10/20/30；`rank_histogram` 金标排名分布；`scripts/bench.py` 延迟基准。真实问句固定深度 30 口径（v1 语料）：R@5 44.7% → R@10 55.3% → R@20 68.4% → R@30 78.9%，21 题未命中中 13 题在 top-30 内（v0.2 重排工作面）
 - **Reranker 接口**（`statute_rag/interfaces.py`）：`HybridRetriever(reranker=…)` 接入点，reranker=None 与 v0.1.1 逐位等价；只动顺序不动 Citation 形状，语义依赖不进核心 import 链，真模型适配器留待 v0.2
 - **可安装包**：pyproject.toml（零运行时依赖，dynamic version 单点，package-data 收录 synonyms.json），CI 安装冒烟
