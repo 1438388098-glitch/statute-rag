@@ -7,7 +7,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from statute_rag.retrieval import (
-    BM25Retriever, HybridRetriever, LikeRetriever, char_ngrams, rrf_fuse,
+    EXPANSION_CHANNEL_WEIGHT, BM25Retriever, HybridRetriever, LikeRetriever,
+    char_ngrams, rrf_fuse,
 )
 
 CORPUS = [
@@ -89,6 +90,56 @@ class RrfFuseTest(unittest.TestCase):
         a = [{"id": i, "law": "L", "num": str(i), "text": "t", "score": 1, "retriever": "bm25"}
              for i in range(10)]
         self.assertEqual(len(rrf_fuse([a], k=3)), 3)
+
+    def test_channel_weights_bias_the_fused_order(self):
+        """通道权重：同 rank 时高权重通道的条文排在前面（v3 轮落地的加权融合）。
+
+        两路各 2 条、id 完全不重叠，按 1/k 等权时次序由 id 破平；给第二路
+        权重 2.5 后它的一号候选必须压过第一路的一号候选。
+        """
+        a = [{"id": 1, "law": "L", "num": "1", "text": "t", "score": 1, "retriever": "bm25"},
+             {"id": 2, "law": "L", "num": "2", "text": "t", "score": 1, "retriever": "bm25"}]
+        b = [{"id": 9, "law": "M", "num": "1", "text": "t", "score": 1, "retriever": "like"},
+             {"id": 10, "law": "M", "num": "2", "text": "t", "score": 1, "retriever": "like"}]
+        equal = rrf_fuse([a, b], k=None)
+        # 等权：两侧 rank1 都是 1/61，压过任一侧 rank2 的 1/62
+        self.assertEqual([c["id"] for c in equal], [1, 9, 2, 10])
+        weighted = rrf_fuse([a, b], k=None, weights=[1.0, 2.5])
+        # 权重差足够大时，第二路整列压过第一路（2.5/62 > 1/61）
+        self.assertEqual([c["id"] for c in weighted], [9, 10, 1, 2])
+        self.assertAlmostEqual(weighted[0]["score"], 2.5 / 61, places=9)
+        scores = dict((c["id"], c["score"]) for c in weighted)
+        self.assertGreater(scores[10], scores[1])  # b 路末位仍强于 a 路首位
+
+    def test_weights_default_to_equal(self):
+        a = [{"id": 1, "law": "L", "num": "1", "text": "t", "score": 1, "retriever": "bm25"}]
+        b = [{"id": 2, "law": "M", "num": "1", "text": "t", "score": 1, "retriever": "like"}]
+        self.assertEqual(rrf_fuse([a, b], k=None, weights=None),
+                         rrf_fuse([a, b], k=None, weights=[1.0, 1.0]))
+
+
+class ChannelWeightWiringTest(unittest.TestCase):
+    """hybrid 通道权重接线：扩展路有权重、无命中时退化为双路等权。"""
+
+    def test_expansion_channel_carries_weight(self):
+        h = HybridRetriever(CORPUS)
+        channels = h._channels("坐牢要多久", 30)  # 「坐牢」在词典里 → 扩展路存在
+        weights = [w for _c, w in channels]
+        self.assertEqual(len(channels), 3)
+        self.assertEqual(weights[0], 1.0)
+        self.assertEqual(weights[1], EXPANSION_CHANNEL_WEIGHT)
+        self.assertGreater(EXPANSION_CHANNEL_WEIGHT, 1.0)
+        self.assertEqual(weights[2], 1.0)
+
+    def test_no_expansion_falls_back_to_equal_weights(self):
+        h = HybridRetriever(CORPUS)
+        channels = h._channels("正当防卫", 30)  # 词典与数字读法均不命中
+        self.assertEqual([w for _c, w in channels], [1.0, 1.0])
+
+    def test_use_expansion_off_keeps_two_equal_channels(self):
+        h = HybridRetriever(CORPUS, use_expansion=False)
+        channels = h._channels("坐牢要多久", 30)
+        self.assertEqual([w for _c, w in channels], [1.0, 1.0])
 
 
 class HybridRetrieverTest(unittest.TestCase):

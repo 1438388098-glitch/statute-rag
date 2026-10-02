@@ -21,6 +21,15 @@ docs/retrieval-improvement.md）：
 - 曾试过「法名先验加权」「查询 trigram 短语加权」两个 BM25 旋钮：
   真实金标 Recall@5 零增量、MRR 略降，已按消融结论移除（负结果记录在
   docs/retrieval-improvement.md）。
+
+v3 语料复标（机制级，见 docs/retrieval-v3-diagnosis.md）：
+- 语料扩容后行长分布由「单一公报页块」（v1）变为「页块 + 官方单条」双峰
+  （v3 新增 11,061 行均长约 105–127 字，旧页块行均长 1,325 字），
+  BM25_B=0.75 的长度归一化开始系统性压制旧页块金标行 —— v1 上近乎
+  惰性的 b 因此变成关键旋钮，按 v3 重标定为 BM25_B=0.6；
+- 扩展查询通道权重 2.5：扩展通道承载「法言法语译法」，在口语原查询与
+  条文用词失配时才是有效信号；v3 上该加权把深池 R@30 从 73.7% 提到
+  81.6%，且 v1/v2 的 R@5、R@10 零回退（见 docs/retrieval-v3-diagnosis.md §5）。
 """
 
 import math
@@ -28,12 +37,24 @@ import math
 from statute_rag.query_expansion import expand_query, load_synonyms
 
 BM25_K1 = 1.5
-BM25_B = 0.75
+# 长度归一化强度。v1 语料全为公报页块（97.4% 的行含 >1 条、均长 1,325 字），
+# 行长高度同质，b 近乎惰性；v3 语料混入 11,061 行官方单条（均长 105–127 字）
+# 后分布双峰，b=0.75 会把长页块金标行压出 top-5。按 v3 重标定为 0.6：
+# 真实金标 R@5 在 v3 上 31.6%→42.1%（v1/v2 的 R@5/R@10/R@30 零回退），
+# 全网格与机制证据见 docs/retrieval-v3-diagnosis.md §5。
+BM25_B = 0.6
 RRF_K = 60  # RRF 常数：抑制排名靠后结果的权重
 
 # hybrid 融合通道深度（消融测量后定值，见 docs/retrieval-improvement.md）。
 # 深度属于检索配置而非返回条数：跨 k 评测须用同一深度取排名再截取。
 HYBRID_FUSION_DEPTH = 30
+
+# 扩展查询通道在 RRF 中的权重。扩展通道的检索串是「原查询 + 法定表述」，
+# 因此原查询 gram 在该通道也计票（总权重 1+2.5），扩展 gram 权重 2.5 ——
+# 使「法言法语译法」在打分上接近口语字面的量级，这正是本域词汇失配的
+# 直接后果。取值来自 v3 小网格扫描并取达成稳定增量的最小权重（见
+# docs/retrieval-v3-diagnosis.md §5；合成金标零回退）。
+EXPANSION_CHANNEL_WEIGHT = 2.5
 
 
 def _normalize(text):
@@ -150,15 +171,20 @@ class BM25Retriever(object):
         return [_citation(self.corpus[i], s, "bm25") for i, s in ranked[:k]]
 
 
-def rrf_fuse(result_lists, k=5, rrf_k=RRF_K):
+def rrf_fuse(result_lists, k=5, rrf_k=RRF_K, weights=None):
     """Reciprocal Rank Fusion：多路检索结果的排名级融合。
 
-    每条结果的得分 = Σ 1 / (rrf_k + rank_i)；在多路中都出现的条文会
+    每条结果的得分 = Σ w_i / (rrf_k + rank_i)；在多路中都出现的条文会
     自然浮到顶部。返回结构与单路一致（retriever 字段记为 "hybrid"）。
     k=None 时返回完整融合排名（供跨 k 评测截取，见 HybridRetriever.recall）。
+
+    weights：与 result_lists 等长的通道权重（缺省全 1，即等权融合）。
+    权重是通道级参数，不对具体查询做任何特判。
     """
+    if weights is None:
+        weights = [1.0] * len(result_lists)
     fused = {}
-    for results in result_lists:
+    for weight, results in zip(weights, result_lists):
         for rank, cite in enumerate(results, start=1):
             key = cite["id"]
             entry = fused.get(key)
@@ -166,7 +192,7 @@ def rrf_fuse(result_lists, k=5, rrf_k=RRF_K):
                 entry = dict(cite)
                 entry["score"] = 0.0
                 fused[key] = entry
-            entry["score"] += 1.0 / (rrf_k + rank)
+            entry["score"] += weight / (rrf_k + rank)
             entry["retriever"] = "hybrid"
     ranked = sorted(fused.values(), key=lambda c: (-c["score"], c["id"]))
     if k is None:
@@ -178,10 +204,11 @@ class HybridRetriever(object):
     """BM25（原查询 + 同义扩展查询）+ LIKE 的多路 RRF 融合。
 
     通道构成：
-    - bm25(原查询)：词法主路；
+    - bm25(原查询)：词法主路，权重 1；
     - bm25(扩展查询)：原查询追加同义词典表述与数字读法变体后另检一路，
-      让「坐牢」这类口语问句能经「服刑」命中条文（无命中时该路自动省略）；
-    - like(原查询)：精确子串路（对合成金标贡献互补命中）。
+      让「坐牢」这类口语问句能经「服刑」命中条文（无命中时该路自动省略），
+      权重 EXPANSION_CHANNEL_WEIGHT（>1，理由见常量注释）；
+    - like(原查询)：精确子串路（对合成金标贡献互补命中），权重 1。
     原查询信号永不替换、只增不改。
 
     通道深度与 k 解耦：HYBRID_FUSION_DEPTH 是检索配置的一部分，search(k≤15)
@@ -202,12 +229,18 @@ class HybridRetriever(object):
                           else load_synonyms()) if use_expansion else None
 
     def _channels(self, query, depth):
-        channels = [self.bm25.search(query, k=depth),
-                    self.like.search(query, k=depth)]
+        """返回 [(结果列表, 通道权重), ...]：原查询 BM25 / 扩展查询 BM25 / LIKE。
+
+        扩展路无命中（既无词典命中也无数字读法变体）时整体省略，此时
+        hybrid 退化为原查询 BM25 + LIKE 双路等权，与 v0.1 行为一致。
+        """
+        channels = [(self.bm25.search(query, k=depth), 1.0),
+                    (self.like.search(query, k=depth), 1.0)]
         if self._synonyms:
             expanded = expand_query(query, self._synonyms)
             if expanded != query:
-                channels.insert(1, self.bm25.search(expanded, k=depth))
+                channels.insert(1, (self.bm25.search(expanded, k=depth),
+                                    EXPANSION_CHANNEL_WEIGHT))
         return channels
 
     def recall(self, query, depth=HYBRID_FUSION_DEPTH):
@@ -217,7 +250,9 @@ class HybridRetriever(object):
         什么」，截断位置决定「呈现多少」，两者混在 search(k) 里会让
         Recall@k 各点变成不同检索配置下的数字。
         """
-        ranking = rrf_fuse(self._channels(query, depth), k=None)
+        channels = self._channels(query, depth)
+        ranking = rrf_fuse([c for c, _w in channels], k=None,
+                           weights=[w for _c, w in channels])
         if self._reranker is not None:
             ranking = self._reranker.rerank(query, ranking, k=len(ranking))
             if not ranking:
