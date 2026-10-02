@@ -102,30 +102,33 @@ class LikeRetriever(object):
 
 
 class BM25Retriever(object):
-    """字符二元组 BM25（零依赖，适合中文无分词场景）。"""
+    """字符二元组 BM25（零依赖，适合中文无分词场景）。
+
+    索引用倒排 postings：{gram: {doc 下标: 频次}}。search 只遍历含查询
+    gram 的文档，复杂度 O(命中文档数) 而非 O(全库)；df 由 len(postings[g])
+    派生，不再单独维护。评分公式与累加顺序与全量扫描版逐位一致。
+    """
 
     def __init__(self, corpus):
         self.corpus = corpus
         self._docs = [x["text"] if isinstance(x, dict) else x for x in corpus]
-        self._tf = []       # 每篇: {gram: freq}
-        self._df = {}       # {gram: 含该 gram 的篇数}
+        self._postings = {}  # {gram: {doc_idx: freq}}，按 doc 下标升序插入
         self._doc_len = []
         total_len = 0
-        for text in self._docs:
+        for doc_idx, text in enumerate(self._docs):
             grams = char_ngrams(_normalize(text))
             tf = {}
             for g in grams:
                 tf[g] = tf.get(g, 0) + 1
-            self._tf.append(tf)
+            for g, freq in tf.items():
+                self._postings.setdefault(g, {})[doc_idx] = freq
             self._doc_len.append(len(grams))
             total_len += len(grams)
-            for g in tf:
-                self._df[g] = self._df.get(g, 0) + 1
         self._avg_len = (total_len / len(self._docs)) if self._docs else 0.0
 
     def _idf(self, gram):
         n = len(self._docs)
-        df = self._df.get(gram, 0)
+        df = len(self._postings.get(gram, ()))
         if df == 0:
             return 0.0
         return math.log((n - df + 0.5) / df + 1.0)
@@ -140,10 +143,7 @@ class BM25Retriever(object):
             idf = self._idf(gram)
             if idf <= 0:
                 continue
-            for doc_idx, tf in enumerate(self._tf):
-                freq = tf.get(gram, 0)
-                if not freq:
-                    continue
+            for doc_idx, freq in self._postings.get(gram, {}).items():
                 denom = freq + BM25_K1 * (1 - BM25_B + BM25_B * self._doc_len[doc_idx] / (self._avg_len or 1.0))
                 scores[doc_idx] = scores.get(doc_idx, 0.0) + idf * freq * (BM25_K1 + 1) / denom
         ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
