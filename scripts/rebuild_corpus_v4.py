@@ -22,11 +22,13 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 V1_MAX_ID = 910000
+ART_RE = re.compile(u"第[一二三四五六七八九十百千零〇]+条")
 
 
 def squeeze(t):
@@ -47,8 +49,10 @@ def main():
                     help=u"合成金标（按 law+num 迁移；它同样绑定被删掉的 v1 行）")
     ap.add_argument("--gold-synth-out", default="")
     ap.add_argument("--report", default="")
-    ap.add_argument("--unrepaired", choices=["drop", "keep"], default="drop",
-                    help=u"仍无干净源的 v1 页块行：drop 不带入（默认）/ keep 原样保留")
+    ap.add_argument("--unrepaired", choices=["drop", "keep", "drop-pageblock"], default="drop",
+                    help=u"仍无干净源的 v1 行：drop 全部不带入 / keep 原样保留 / "
+                         u"drop-pageblock 只丢页块为主的法（页块比例 ≥ 0.5），"
+                         u"v1 本身已是条级的法保留（默认仍为 drop，与 v4 口径一致）")
     args = ap.parse_args()
 
     repl = []
@@ -72,6 +76,8 @@ def main():
     kept, dropped_rows = [], []
     dropped_laws = {}
     base_laws = set()
+    v1_stat = {}          # law -> [总行数, 含 >1 个「第X条」的行数]
+    v1_rows = []          # 先收 v1 行，判完页块比例再决定去留
     for line in io.open(args.base, encoding="utf-8"):
         line = line.strip()
         if not line:
@@ -79,10 +85,25 @@ def main():
         r = json.loads(line)
         base_laws.add(r["law"])
         is_v1 = (not r.get("meta")) and r["id"] < V1_MAX_ID
-        if is_v1 and r["law"] in repl_laws:
+        if not is_v1:
+            kept.append(r)
+            continue
+        v1_rows.append(r)
+        s = v1_stat.setdefault(r["law"], [0, 0])
+        s[0] += 1
+        if len(ART_RE.findall(r["text"])) > 1:
+            s[1] += 1
+
+    for r in v1_rows:
+        if r["law"] in repl_laws:
             dropped_rows.append(r)
             continue
-        if is_v1 and args.unrepaired == "drop":
+        tot, multi = v1_stat[r["law"]]
+        ratio = multi / float(tot or 1)
+        # drop-pageblock：只丢「页块为主」的法（页块比例 ≥ 0.5）。v1 里本来就已经是
+        # 条级的法（小体量批复/规定，比例多为 0）不该跟着一起丢——那是 v4 的一刀切
+        # 误伤，实测有 4 部法因此整部缺席。
+        if args.unrepaired == "drop" or (args.unrepaired == "drop-pageblock" and ratio >= 0.5):
             dropped_rows.append(r)
             dropped_laws[r["law"]] = dropped_laws.get(r["law"], 0) + 1
             continue
@@ -107,7 +128,7 @@ def main():
     rep = [
         u"v4 组装报告",
         u"base 行数：%d" % len(kept + dropped_rows),
-        u"替换：删 v1 页块行 %d（其中 %d 行属于有干净替代的法，%d 行属于仍无源的法）"
+        u"替换：删 v1 行 %d（其中 %d 行属于有干净替代的法，%d 行属于仍无源的法）"
         % (len(dropped_rows), len(dropped_rows) - sum(dropped_laws.values()), sum(dropped_laws.values())),
         u"新增条级行：%d" % len(repl),
         u"v4 行数：%d" % len(out_rows),

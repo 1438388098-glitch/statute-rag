@@ -1,21 +1,21 @@
 {
   "generated": {
-    "commit": "31f3dcd",
-    "corpus_size": 25273,
-    "date": "2026-10-02 20:08"
+    "commit": "a9d800d",
+    "corpus_size": 25033,
+    "date": "2026-10-03 00:51"
   },
   "real": {
     "bm25": {
-      "mrr": 0.14,
-      "mrr_display": "0.140",
-      "recall_at_5": 0.2368,
-      "recall_at_5_display": "23.7%"
-    },
-    "hybrid": {
-      "mrr": 0.25,
-      "mrr_display": "0.250",
+      "mrr": 0.225,
+      "mrr_display": "0.225",
       "recall_at_5": 0.4474,
       "recall_at_5_display": "44.7%"
+    },
+    "hybrid": {
+      "mrr": 0.271,
+      "mrr_display": "0.271",
+      "recall_at_5": 0.4737,
+      "recall_at_5_display": "47.4%"
     },
     "like": {
       "mrr": 0.0,
@@ -26,43 +26,43 @@
     "n": 38
   },
   "real_deep": {
-    "recall_at_10": 0.5263,
-    "recall_at_20": 0.6842,
-    "recall_at_30": 0.8158,
-    "recall_at_5": 0.4474
+    "recall_at_10": 0.6579,
+    "recall_at_20": 0.8684,
+    "recall_at_30": 0.9474,
+    "recall_at_5": 0.4737
   },
   "real_deep_display": {
-    "R@10": "52.6%",
-    "R@20": "68.4%",
-    "R@30": "81.6%",
-    "R@5": "44.7%"
+    "R@10": "65.8%",
+    "R@20": "86.8%",
+    "R@30": "94.7%",
+    "R@5": "47.4%"
   },
   "real_hybrid_rank_histogram": {
-    "1": 6,
+    "1": 7,
     "11-30": 11,
     "2-5": 11,
-    "6-10": 3,
-    "miss": 7
+    "6-10": 7,
+    "miss": 2
   },
   "recall_at_5_note": "噪声限定：真实 R@5 的最后 2.6pt（扩展通道权重 w 2.0→2.5）只等于 1 道题的名次交换，落在 38 题的量化噪声内（1 题 = 2.6pt）；跨权重稳定、三版语料一致的硬结论是 R@30（v3 73.7%→81.6%）。",
   "synth": {
     "bm25": {
-      "mrr": 0.905,
-      "mrr_display": "0.905",
-      "recall_at_5": 0.9379,
-      "recall_at_5_display": "93.8%"
+      "mrr": 0.812,
+      "mrr_display": "0.812",
+      "recall_at_5": 0.8475,
+      "recall_at_5_display": "84.7%"
     },
     "hybrid": {
-      "mrr": 0.968,
-      "mrr_display": "0.968",
-      "recall_at_5": 0.9718,
-      "recall_at_5_display": "97.2%"
+      "mrr": 0.847,
+      "mrr_display": "0.847",
+      "recall_at_5": 0.8644,
+      "recall_at_5_display": "86.4%"
     },
     "like": {
       "mrr": 0.774,
       "mrr_display": "0.774",
-      "recall_at_5": 0.774,
-      "recall_at_5_display": "77.4%"
+      "recall_at_5": 0.7797,
+      "recall_at_5_display": "78.0%"
     },
     "n": 177
   }

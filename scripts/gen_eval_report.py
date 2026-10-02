@@ -100,6 +100,8 @@ def main():
                         help="真实语料 JSONL（不入仓库，维护者本地提供）")
     parser.add_argument("--corpus-label", default=None,
                         help="并列表里当前语料的展示名（缺省取文件名）")
+    parser.add_argument("--history-note", default=None,
+                        help="并列表末尾的口径说明（缺省为 v3 重标定那段）")
     parser.add_argument("--scope-note", default=None,
                         help="报告头部「当前口径语料」后的口径说明（缺省为通用措辞，"
                              "换语料时不应残留上一次的说明）")
@@ -174,17 +176,30 @@ def main():
         for raw in args.history:
             label, path = (raw.split("=", 1) if "=" in raw
                            else (os.path.basename(raw), raw))
+            # 历史口径的金标：v1~v3 里 v1 行还在，同一份 v1 金标就能横比；v4/v5 把
+            # v1 页块行换成了条级行（旧 id 不复存在），只能各用各的迁移金标，两边
+            # 不能混。写法：--history "v4=data/corpus_v4.jsonl|real.jsonl,synth.jsonl"
+            golds = ""
+            if "|" in path:
+                path, _, golds = path.partition("|")
             hist_corpus = load_corpus(path)
+            h_real, h_synth = real_gold, synth_gold
+            if golds:
+                gp = golds.split(",")
+                h_real = load_gold(gp[0]) if gp[0] else real_gold
+                h_synth = (load_gold(gp[1]) if len(gp) > 1 and gp[1] else synth_gold)
             real_m, real_m5, synth_m = _measure(HybridRetriever(hist_corpus),
-                                                real_gold, synth_gold)
+                                               h_real, h_synth)
             entries.append(("%s（历史口径）" % label, len(hist_corpus),
                             real_m, real_m5, synth_m))
         report_parts.append(
-            "## 三版语料并列（hybrid；同一份代码、不同语料，跨语料不可直接比较）\n\n"
+            "## 历代语料并列（hybrid；同一份代码、不同语料，跨语料不可直接比较）\n\n"
             + _history_table(entries)
-            + "\n\n语料扩容会改变同批问句的 R@5：v3 扩容后一度降到 31.6%，"
-              "按诊断结论重标定 BM25 长度归一化与融合权重后恢复到 44.7%。"
-              "机制、逐题迁移与全网格见 [docs/retrieval-v3-diagnosis.md](retrieval-v3-diagnosis.md)。")
+            + "\n\n"
+            + (args.history_note or
+               "语料扩容会改变同批问句的 R@5：v3 扩容后一度降到 31.6%，"
+               "按诊断结论重标定 BM25 长度归一化与融合权重后恢复到 44.7%。"
+               "机制、逐题迁移与全网格见 [docs/retrieval-v3-diagnosis.md](retrieval-v3-diagnosis.md)。"))
 
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")

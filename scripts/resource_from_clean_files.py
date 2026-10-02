@@ -44,6 +44,7 @@ SENT_END = u"。；：！？”』）"
 # 只当一个「只抓最离谱那批」的保守门（阈值取在干净行最大值之上），真正的质量依据
 # 是「源件本身的行首条号是否单调」与「逐法条号是否全序递增」。
 SPACE_DENSITY_MAX = 0.065
+DENSITY_MIN_LEN = 20  # 短于 20 字的条不判空格密度（短条会被误杀）
 YEAR_RE = re.compile(u"(19|20)\\d{2}")
 ART_RE = re.compile(u"第[一二三四五六七八九十百千零〇]+条")
 
@@ -101,16 +102,22 @@ def split_articles(law, paras):
 
 
 def clean(art):
-    """逐条硬校验：返回 None 表示通过，否则返回拒收原因。"""
+    """逐条硬校验：返回 None 表示通过，否则返回拒收原因。
+
+    空格密度只在正文够长（≥ `DENSITY_MIN_LEN`）时才判：它本来是用来识别「两栏
+    交错」的长乱文，对「第八条 仲裁应当遵循诚信原则。」这种短条会误杀
+    （1 个空格 / 12 字 = 0.083 > 阈值）。短条的真假由「是否以条号开头」「条号
+    是否全序」把关，不靠密度。
+    """
     t = art["text"]
     if not t or len(t) < 6:
         return u"过短"
     if not t.startswith(art["num"]):
         return u"不以条号开头"
+    if len(t) >= DENSITY_MIN_LEN and t.count(u" ") / float(len(t)) > SPACE_DENSITY_MAX:
+        return u"行内空格密度过高(疑交错)"
     if t[-1] not in SENT_END:
         return u"结尾非句末标点(%s)" % t[-1]
-    if t.count(u" ") / float(len(t)) > SPACE_DENSITY_MAX:
-        return u"行内空格密度过高(疑交错)"
     if u"中华人民共和国最高人民法院公报" in t or re.search(u"^\\s*-\\s*\\d+\\s*-", t):
         return u"夹带公报排版垃圾"
     return None

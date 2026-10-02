@@ -46,8 +46,9 @@ from statute_rag.query_expansion import load_synonyms  # noqa: E402
 from statute_rag.retrieval import HYBRID_FUSION_DEPTH, HybridRetriever  # noqa: E402
 
 APP_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app", "index.html")
-# 默认用条级重建版 v4：v3 里 130 部法的「公报页块行」已换成校验过的条级正文
-DEFAULT_CORPUS = os.path.join("data", "corpus_v4.jsonl")
+# 默认用条级重建版 v5：v3 里 14,212 行「公报页块行」已全部换成校验过的条级正文
+# （v4 换掉干净源件覆盖的 132 部；v5 补上剩下 104 部，仅 1 部公报碎片化文书仍缺源）
+DEFAULT_CORPUS = os.path.join("data", "corpus_v5.jsonl")
 DEFAULT_K = 10
 MAX_K = 50
 # 超长查询只会稀释检索信号（且会让 URL 过长），截断比报错友好；
