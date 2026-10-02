@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         # 要求声明的每个支持版本都真实跑过（requires-python >=3.8，主测 3.9/3.13）
-        python-version: ["3.9", "3.13"]
+        python-version: ["3.8", "3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
 

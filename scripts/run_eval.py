@@ -46,6 +46,8 @@ def main():
         return
     print("语料条文数：", len(corpus))
 
+    if not os.path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
     if args.gold:
         gold = load_gold(args.gold)
         print("加载金标：", args.gold)
@@ -67,8 +69,6 @@ def main():
     report = format_report(results, len(corpus), gold_desc=args.gold_desc)
     print("")
     print(report)
-    if not os.path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
     report_path = os.path.join(args.out_dir, "eval_report.md")
     with io.open(report_path, "w", encoding="utf-8") as f:
         f.write("# 评测报告\n\n```\n%s\n```\n" % report)

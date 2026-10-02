@@ -6,6 +6,11 @@
 
 ### Fixed
 - LikeRetriever 多文档命中排序：原实现主键是文档下标降序，与「位置越靠前越相关」的注释语义相反；已改为按命中位置升序（双金标数字零漂移）
+- run_eval 在全新输出目录上生成合成金标时因目录不存在崩溃（makedirs 时机早于写入）
+
+### Changed
+- BM25 检索索引改为倒排 postings：单查询延迟 p50 43.1→12.7 ms、hybrid 102.7→30.3 ms（3.4×，真实语料基准，口径见 scripts/bench.py）；一次性索引构建 5.7→8.2 s
+- 双重审查修复：重排器返回空列表显式报错（契约：可截断不可清空）；bench 解析金标改用 json.loads
 
 ### Added
 - **度量底座**：HybridRetriever 通道深度与 k 解耦（`recall(query, depth)` 完整融合排名 → 截 k）；`evaluate_multi_k` 同一份排名算 Recall@5/10/20/30；`rank_histogram` 金标排名分布；`scripts/bench.py` 延迟基准。真实问句固定深度 30 口径：R@5 44.7% → R@10 55.3% → R@20 68.4% → R@30 78.9%，21 题未命中中 13 题在 top-30 内（v0.2 重排工作面）

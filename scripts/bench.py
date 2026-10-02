@@ -10,6 +10,7 @@
 """
 import argparse
 import io
+import json
 import os
 import sys
 import time
@@ -44,7 +45,7 @@ def _load_queries(args, corpus):
             for line in f:
                 line = line.strip()
                 if line:
-                    queries.append(line.split('"query":')[1].split('"')[1])
+                    queries.append(json.loads(line)["query"])
     if not queries:
         queries = [item["text"][:12] for item in corpus]
     return queries[:args.queries]

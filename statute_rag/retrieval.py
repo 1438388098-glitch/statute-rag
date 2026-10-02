@@ -220,6 +220,10 @@ class HybridRetriever(object):
         ranking = rrf_fuse(self._channels(query, depth), k=None)
         if self._reranker is not None:
             ranking = self._reranker.rerank(query, ranking, k=len(ranking))
+            if not ranking:
+                # 契约是「重排只动顺序（可截断）、不可清空」：空排名会让
+                # 强制引用静默失效，宁可显式失败也不静默吞掉。
+                raise ValueError("reranker 返回空列表：重排器不得清空融合排名")
         return ranking
 
     def search(self, query, k=5):

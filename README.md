@@ -98,6 +98,13 @@ Key design decisions:
 - **Query expansion adds, never replaces (v0.1.1)**: real questions are colloquial (坐牢 "doing time", 社保 "social insurance") while statutes use formal wording (服刑, 社会保险) — no lexical overlap. The fix is a data-driven domain dictionary with append-style expansion and RRF fusion: **the original query is kept verbatim**, expansion becomes an extra channel (omitted automatically when nothing fires). Anti-overfitting discipline and the per-round ablation (including mechanisms removed for zero gain) are documented in [docs/retrieval-improvement.md](docs/retrieval-improvement.md).
 - **Depth–k decoupling**: channel depth is a retrieval configuration, not a return count. `search(k)` uses one fixed depth (the published numbers' configuration); cross-k comparisons come from `recall(query, depth)` — one ranking, truncated at each k (`evaluate_multi_k`). Measured on the real gold, Recall@5 44.7% → Recall@30 78.9%: **most real questions are already retrieved, they lose on ranking** — the quantified case for the v0.2 reranking channel.
 
+## Scope (what this is not, stated up front)
+
+- **Not a semantic RAG, for now**: no embeddings, no vector store — character-bigram BM25 is lexical retrieval. v0.1.1 built a lexical bridge (colloquial↔statutory synonym dictionary + query expansion: 坐牢→服刑, 社保→社会保险, 1000元→一千元), lifting real-question Recall@5 from 26.3% to 44.7%; purely semantic paraphrases still cannot be hit. The semantic channel needs a usable Chinese embedding model/API and belongs to v0.2.
+- **Two gold sets**: the synthetic gold measures the lexical recall ceiling; the real-question gold v1 (38 questions, LLM-verified, human legal review in progress) measures real-question performance. See [docs/real-question-eval.md](docs/real-question-eval.md).
+- **The corpus is not distributed**: statutes come from a local legal-wisdom database (legal.db: 257 laws / 14,344 articles; 14,212 clean articles covering 238 laws after this repo's quality gate). The repo contains code, tests, and evaluation artifacts only — reproduction tiers above.
+- Nothing here is legal advice; the authoritative text of any statute is its official publication.
+
 ## Evaluation
 
 Two gold sets, two scopes, reported side by side:

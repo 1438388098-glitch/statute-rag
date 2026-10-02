@@ -24,7 +24,7 @@ statute_rag 核心 import 链——放在独立模块内延迟 import，ImportEr
 时报带安装指引的异常；核心保持零第三方依赖（见 pyproject.toml）。
 
 接入点：HybridRetriever(corpus, reranker=MyReranker())。reranker=None
-时行为与 v0.1.1 完全一致（降级即现状）；接重排器后建议用
+时与 v0.1.1 的已发布评测口径（k≤15）逐位一致（降级即现状）；接重排器后建议用
 recall(query, depth=100) 加深召回池喂饱重排（深度扫描见
 docs/retrieval-improvement.md R2d）。
 """

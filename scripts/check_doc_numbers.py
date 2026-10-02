@@ -38,7 +38,7 @@ def main():
         metrics = json.load(f)
     values = _display_values(metrics)
 
-    # eval_report.md 是生成产物，只核对存在与新鲜（同一 commit 标记）
+    # eval_report.md 是生成产物：只做数字存在性核对（commit 新鲜性由生成脚本写入，此处不校验）
     report_path = os.path.join(ROOT, "docs", "eval_report.md")
     problems = []
     with io.open(report_path, "r", encoding="utf-8") as f:
