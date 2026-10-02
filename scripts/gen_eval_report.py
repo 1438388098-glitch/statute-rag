@@ -107,11 +107,17 @@ def main():
                         help="历史口径语料，可重复；写法 \"PATH\" 或 \"LABEL=PATH\"；仅在报告中追加并列表，不进 metrics.json")
     parser.add_argument("--out-doc", default="docs/eval_report.md")
     parser.add_argument("--out-metrics", default="docs/metrics.json")
+    parser.add_argument("--gold-synth", default=None,
+                        help="合成金标路径（缺省 gold/gold_synth_seed20260918.jsonl；"
+                             "条级重建语料用迁移版 gold/gold_synth_v4_seed20260918.jsonl）")
+    parser.add_argument("--gold-real", default=None,
+                        help="真实问句金标路径（缺省 gold/gold_real_38.jsonl；条级重建语料用"
+                             "迁移版 gold/gold_real_38_v4.jsonl，两者口径不同，见报告说明）")
     args = parser.parse_args()
 
     corpus = load_corpus(args.corpus)
-    synth_gold = load_gold(SYNTH_GOLD)
-    real_gold = load_gold(REAL_GOLD)
+    synth_gold = load_gold(args.gold_synth or SYNTH_GOLD)
+    real_gold = load_gold(args.gold_real or REAL_GOLD)
 
     metrics = {"synth": {"n": len(synth_gold)}, "real": {"n": len(real_gold)}}
     report_parts = []
