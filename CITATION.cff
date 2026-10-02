@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "如果你在研究或项目中使用了 statute-rag，请用以下元数据引用它。"
+title: "statute-rag: Article-level hybrid statute retrieval with forced verifiable citations"
+authors:
+  - alias: 1438388098-glitch
+version: v0.1.1
+date-released: "2026-09-29"
+license: MIT
+repository-code: "https://github.com/1438388098-glitch/statute-rag"
+keywords:
+  - legal
+  - chinese
+  - retrieval
+  - bm25
+  - rag
+  - citation
+  - evaluation
+abstract: >-
+  A statute-retrieval pipeline that treats the article as the retrieval unit and
+  verifiable citations as a hard constraint. Corpus quality gate (14,344 → 14,212
+  articles), character-bigram BM25 / LIKE multi-channel RRF fusion with
+  colloquial-to-statutory query expansion, and a fully reproducible offline
+  evaluation: hybrid Recall@5 98.9% on a synthetic gold (177 questions, fixed
+  seed) and 44.7% on a real-question gold (38 genuine web questions, LLM-verified),
+  with failure cases and negative results documented. Core has zero third-party
+  dependencies.

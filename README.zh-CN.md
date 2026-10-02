@@ -115,6 +115,10 @@ python scripts/search_cli.py --db <你的 legal.db> "承诺生效时合同成立
 - **v0.2**：中文 embedding 通道（接口抽象，可选本地/远端）+ 重排 → 真语义混合检索；真实问句金标扩容（目标 200 题）+ 人工法律复核
 - **v0.3**：条/款/项多级分块；法条版本对齐（时效性）；「检索不到就拒答」策略与幻觉护栏评测
 
+## 版本与引用
+
+版本沿革见 [CHANGELOG.md](CHANGELOG.md)（Keep a Changelog 格式）；引用本项目请用 [CITATION.cff](CITATION.cff) 中的元数据（GitHub 仓库页会据此渲染「Cite this repository」按钮）。
+
 ## License
 
 [MIT](LICENSE)

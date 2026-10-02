@@ -119,6 +119,10 @@ python scripts/search_cli.py --db <your legal.db> "承诺生效时合同成立" 
 - **v0.2**: Chinese embedding channel (interface abstraction, local/remote pluggable) + reranking → true semantic hybrid retrieval; real-question gold expansion (target 200 questions) + human legal review
 - **v0.3**: article/clause/item multi-level chunking; statute version alignment (temporal validity); a "refuse to answer when retrieval fails" policy and hallucination-guardrail evaluation
 
+## Versioning & citation
+
+See [CHANGELOG.md](CHANGELOG.md) for the version history (Keep a Changelog format). To cite this project, use the metadata in [CITATION.cff](CITATION.cff) (GitHub renders it as a "Cite this repository" button).
+
 ## License
 
 [MIT](LICENSE)
