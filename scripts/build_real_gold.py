@@ -130,25 +130,40 @@ QUESTIONS = [
 MAX_GOLD = 3  # 每题最多保留的金标行数
 
 
-def main():
-    parser = argparse.ArgumentParser(description="构建真实问句金标")
-    parser.add_argument("--corpus", default="data/corpus.jsonl")
-    parser.add_argument("--out", default="gold/gold_real_38.jsonl")
-    parser.add_argument("--max-gold", type=int, default=MAX_GOLD)
-    args = parser.parse_args()
+def load_specs(path):
+    """读取外部问句 spec/候选池（JSONL）：每行 {question, url[, anchors, source_site, qid, verified]}。
 
-    corpus = []
-    with io.open(args.corpus, "r", encoding="utf-8") as f:
-        for line in f:
+    - 核验通过的批次：verified 缺省视为 true，必须有 anchors；
+    - 候选池：verified=false，可无 anchors（尚未定位证据），会被跳过并计入剔除清单。
+    """
+    specs = []
+    with io.open(path, encoding="utf-8") as f:
+        for i, line in enumerate(f, 1):
             line = line.strip()
-            if line:
-                corpus.append(json.loads(line))
-    for a in corpus:
-        a["_norm"] = "".join((a.get("text") or "").split())
-    print("语料条文数：", len(corpus))
+            if not line:
+                continue
+            spec = json.loads(line)
+            if not spec.get("question") or not spec.get("url"):
+                raise SystemExit(u"spec 第 %d 行缺少 question/url" % i)
+            if spec.get("verified") is not False and not spec.get("anchors"):
+                raise SystemExit(u"spec 第 %d 行：已验证条目缺少 anchors" % i)
+            specs.append(spec)
+    return specs
 
+
+def build_gold(corpus, specs, max_gold=MAX_GOLD, qid_prefix=u"r", default_site=SITE):
+    """在语料中核验每题证据并产出金标行。返回 (out, failed)。
+
+    failed 为 [(spec, reason)]，含证据未命中与 verified=false 两类。
+    qid 默认取 spec 序号（与内置 38 题口径一致），spec 可用 qid 字段显式覆盖。
+    """
+    for a in corpus:
+        a["_norm"] = u"".join((a.get("text") or u"").split())
     out, failed = [], []
-    for i, spec in enumerate(QUESTIONS, start=1):
+    for i, spec in enumerate(specs, start=1):
+        if spec.get("verified") is False:
+            failed.append((spec, u"未核验（verified=false），不进金标"))
+            continue
         evidence, gold_rows = None, []
         for anchor in spec["anchors"]:
             rows = [a for a in corpus if anchor in a["_norm"]]
@@ -156,17 +171,18 @@ def main():
                 evidence = anchor
                 # 证据占比 = 证据起点 / 行文本长度，越小代表该行越「围绕」答案
                 rows.sort(key=lambda a: a["_norm"].index(anchor) / max(len(a["_norm"]), 1))
-                gold_rows = rows[: args.max_gold]
+                gold_rows = rows[:max_gold]
                 break
         if not gold_rows:
-            failed.append(spec["question"])
+            failed.append((spec, u"证据在语料中未逐字命中"))
             continue
         # 逐条核验：evidence 必须是每个金标行文本的子串
         for a in gold_rows:
             assert evidence in a["_norm"], (spec["question"], a["id"])
         primary = gold_rows[0]
+        qid = spec.get("qid") or (qid_prefix + u"%03d" % i)
         out.append({
-            "qid": "r%03d" % i,
+            "qid": qid,
             # query：真实问句原文（口语、含疑问词），直接送给检索器
             "query": spec["question"],
             "question": spec["question"],
@@ -175,19 +191,50 @@ def main():
             "num": primary["num"],
             "gold_ids": [a["id"] for a in gold_rows],
             "gold_laws": ["%s %s" % (a["law"], a["num"]) for a in gold_rows],
-            "source_site": SITE,
+            "source_site": spec.get("source_site") or default_site,
             "source_url": spec["url"],
             "evidence": evidence,
         })
+    return out, failed
+
+
+def main():
+    parser = argparse.ArgumentParser(description="构建真实问句金标")
+    parser.add_argument("--corpus", default="data/corpus.jsonl")
+    parser.add_argument("--out", default="gold/gold_real_38.jsonl")
+    parser.add_argument("--spec", help="外部问句 spec JSONL（多批次用；缺省用内置 38 题）")
+    parser.add_argument("--qid-prefix", default="r", help="自动 qid 前缀（多批次防重）")
+    parser.add_argument("--max-gold", type=int, default=MAX_GOLD)
+    parser.add_argument("--dropped", help="未通过核验的 spec 写入该 JSONL（含原因）")
+    args = parser.parse_args()
+
+    corpus = []
+    with io.open(args.corpus, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                corpus.append(json.loads(line))
+    print("语料条文数：", len(corpus))
+
+    specs = load_specs(args.spec) if args.spec else QUESTIONS
+    out, failed = build_gold(corpus, specs, max_gold=args.max_gold,
+                             qid_prefix=args.qid_prefix)
 
     with io.open(args.out, "w", encoding="utf-8") as f:
         for q in out:
             f.write(json.dumps(q, ensure_ascii=False) + "\n")
     print("已写出 %d 题金标：%s" % (len(out), args.out))
     if failed:
-        print("未能在语料中核验到证据、已剔除 %d 题：" % len(failed))
-        for q in failed:
-            print("  -", q)
+        print("未进金标 %d 题：" % len(failed))
+        for spec, reason in failed:
+            print("  - [%s] %s" % (reason, spec["question"]))
+    if args.dropped:
+        with io.open(args.dropped, "w", encoding="utf-8") as f:
+            for spec, reason in failed:
+                d = dict(spec)
+                d["not_included_reason"] = reason
+                f.write(json.dumps(d, ensure_ascii=False) + "\n")
+        print("未进金标清单 → %s（%d 条）" % (args.dropped, len(failed)))
 
 
 if __name__ == "__main__":
