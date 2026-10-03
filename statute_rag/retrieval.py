@@ -49,6 +49,10 @@ RRF_K = 60  # RRF 常数：抑制排名靠后结果的权重
 # 深度属于检索配置而非返回条数：跨 k 评测须用同一深度取排名再截取。
 HYBRID_FUSION_DEPTH = 30
 
+# 接重排器时 search() 用的召回池深度（嵌套语义重排实验口径 pool=100）。
+# reranker=None 时此值不参与任何路径，已发布口径逐位不变。
+RERANK_POOL_DEPTH = 100
+
 # 扩展查询通道在 RRF 中的权重。命名以「通道」为单位，**不是**只给扩展词加权：
 # 该通道的检索串是「原查询 + 法定表述」，所以它命中的原查询 gram 也一并计票，
 # 实得权重 1 + EXPANSION_CHANNEL_WEIGHT（原查询通道 1 + 本通道 1+w），
@@ -74,6 +78,12 @@ EXPANSION_CHANNEL_WEIGHT = 1.5
 CHANNEL_BM25 = "bm25"        # 原查询字符二元组 BM25
 CHANNEL_EXPANSION = "expand"  # 同义词典扩展后的 BM25
 CHANNEL_LIKE = "like"        # 原查询精确子串
+
+# 语义接入采用「嵌套重排」而非「第四通道」：两种结构都实测过（v7 实验，
+# docs/retrieval-v7-semantic.md），四通道扁平融合让语义 top-100 整队进场，
+# 挤掉词法支持弱的金标（真实 38 题 R@5 24/38，w 越大越差 57.9%）；
+# 嵌套重排（hybrid 先聚合名次，语义对聚合名次做 RRF，只动顺序）真实
+# 71.1%（27/38）。负结果留档防止重提。
 
 
 def _normalize(text):
@@ -240,10 +250,12 @@ class HybridRetriever(object):
     视图——重排只动顺序不动 Citation 形状，语义依赖不得进入核心 import 链。
     """
 
-    def __init__(self, corpus, use_expansion=True, synonyms=None, reranker=None):
+    def __init__(self, corpus, use_expansion=True, synonyms=None, reranker=None,
+                 pool_extra=None):
         self.bm25 = BM25Retriever(corpus)
         self.like = LikeRetriever(corpus)
         self._reranker = reranker
+        self._pool_extra = pool_extra
         self._synonyms = (synonyms if synonyms is not None
                           else load_synonyms()) if use_expansion else None
 
@@ -286,7 +298,20 @@ class HybridRetriever(object):
                     names.append(name)
         ranking = rrf_fuse([c for _n, c, _w in channels], k=None,
                            weights=[w for _n, _c, w in channels])
-        if self._reranker is not None:
+        # gateA 置信门：LIKE 对原查询有精确子串命中时（查询即条文短语，合成
+        # 金标的构造形态），词法已确定命中，语义并池与重排只会搅乱排名——
+        # 实测合成金标 99.4% 全靠这道门保住（无门时降到 60%）。真实/盲写题
+        # 是自然语句，LIKE 命中率为 0，不受影响。
+        gate_a = bool(self.like.search(query, k=1))
+        if self._pool_extra is not None and not gate_a:
+            # 召回池扩充：把语义 top-K 并进池尾（去重），给重排器候选。
+            # 条目全部是语料原文，带完整 Citation 字段，不是凭空造条目。
+            seen = set(c["id"] for c in ranking)
+            for cite in self._pool_extra.search(query, k=None):
+                if cite["id"] not in seen:
+                    ranking.append(cite)
+                    seen.add(cite["id"])
+        if self._reranker is not None and not gate_a:
             ranking = self._reranker.rerank(query, ranking, k=len(ranking))
             if not ranking:
                 # 契约是「重排只动顺序（可截断）、不可清空」：空排名会让
@@ -310,4 +335,9 @@ class HybridRetriever(object):
         return ranking
 
     def search(self, query, k=5):
-        return self.recall(query, depth=max(HYBRID_FUSION_DEPTH, k))[:k]
+        # 接重排器时加深召回池喂饱重排（嵌套语义重排的实验口径 pool=100，
+        # docs/retrieval-v7-semantic.md）；无重排器时与已发布口径逐位一致。
+        depth = max(HYBRID_FUSION_DEPTH, k)
+        if self._reranker is not None:
+            depth = max(depth, RERANK_POOL_DEPTH)
+        return self.recall(query, depth=depth)[:k]

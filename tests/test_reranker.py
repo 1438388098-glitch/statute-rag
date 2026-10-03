@@ -64,13 +64,17 @@ class RerankerContractTest(unittest.TestCase):
                 self.assertIn(field, cite)
 
     def test_empty_rerank_result_is_rejected(self):
-        """重排器清空排名属契约违规，须显式报错而非静默吞掉引用。"""
+        """重排器清空排名属契约违规，须显式报错而非静默吞掉引用。
+
+        查询用「防卫 过当」而非「正当防卫」：后者是条文原文子串，会被
+        gateA 置信门拦下（LIKE 精确命中时不重排），走不到契约检查。
+        """
         class ClearingReranker(object):
             def rerank(self, query, citations, k):
                 return []
         h = HybridRetriever(CORPUS, reranker=ClearingReranker())
         with self.assertRaises(ValueError):
-            h.recall("正当防卫")
+            h.recall("防卫 过当")
 
     def test_search_truncates_reranked_ranking(self):
         h = HybridRetriever(CORPUS, reranker=OverlapReranker())

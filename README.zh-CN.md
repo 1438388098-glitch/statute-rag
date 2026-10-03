@@ -58,7 +58,26 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 > **合成金标 100% 是设计使然，不是指标吹牛**：v6 的合成金标按 v6 语料重新生成（`make_gold` 取条文内高区分度短语作查询），干净条级语料上「独特短语→原条文」是 LIKE 通道的舒适区，它守的是灾难性损坏（语料污染、索引坏），不再有细粒度回归检测力——细粒度判别靠下面两套金标。
 > **外部隔离题库（出题代理盲写，从未参与调参）**：100 题法条检索题由出题代理在看不到语料与代码的环境编写（每题联网/本地法条库核对条文，0 题未核实），hybrid **R@5 70.0%、R@10 80.0%、R@30 90.0%、MRR 0.584**。它是本仓库的「只验不调」验收集（见 [docs/retrieval-v6-retune.md](docs/retrieval-v6-retune.md) §2.3）。题库经映射后有 100/100 可测（v5 语料时为 89/100，缺口即 v6 补的法）。
 
-**深度召回曲线**（固定 depth=30 的同一份排名逐 k 截取，跨 k 可比）：真实问句上 hybrid **Recall@10 68.4% → Recall@20 86.8% → Recall@30 94.7%**。38 题里只剩 2 题未进 top-30，16 题在 6-30 名内（v0.2 重排通道的工作面）。逐 k 表与排名分布见 [docs/eval_report.md](docs/eval_report.md)——由 `scripts/gen_eval_report.py` 生成，[docs/metrics.json](docs/metrics.json) 是数字的单一来源（CI 校验两份 README 与之一致）。
+**深度召回曲线**（固定 depth=30 的同一份排名逐 k 截取，跨 k 可比）：真实问句上 hybrid **Recall@10 68.4% → Recall@20 86.8% → Recall@30 94.7%**。38 题里只剩 2 题未进 top-30，16 题在 6-30 名内（重排通道的工作面）。逐 k 表与排名分布见 [docs/eval_report.md](docs/eval_report.md)——由 `scripts/gen_eval_report.py` 生成，[docs/metrics.json](docs/metrics.json) 是数字的单一来源（CI 校验两份 README 与之一致）。
+
+### 语义重排层（v7，可选依赖，2026-10）
+
+上面各表是**词法 hybrid 基线**（`reranker=None`，零第三方依赖）。在它之上接一层可选语义重排，同一份语料与金标上：
+
+| 金标 | hybrid 基线 R@5 | + 语义重排 v7 R@5 | R@30 |
+|---|---|---|---|
+| 真实问句 38 题 | 52.6% | **71.1%**（27/38） | 97.4% |
+| 外部隔离题库 100 题 | 70.0% | **90.0%**（90/100） | 95.0% |
+| 合成金标 177 题 | 100.0% | 99.4%（1 题） | 99.4% |
+
+机制：双中文向量模型（bge-small-zh-v1.5 + bge-base-zh-v1.5）全库名次集成 → 语义
+top-50 并入召回池 → 加权 RRF 融合 → 交叉编码器（bge-reranker-base）对前 10 名做
+**名次 RRF 混合**（不是替换，替换式会伤真实题 4 题）→ LIKE 精确命中时整层跳过
+（保合成金标）。全部消融、被否决的路线（四通道扁平融合、余弦原始分、静态词向量表、
+放大模型）与「w_cross 在盲写集上选」的超参披露见 [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md)。
+
+依赖与降级：语义层需 `numpy + transformers + torch`（CPU 即可）+ 离线预算的条文向量；
+不装/不传时检索行为与上表基线**逐位一致**，核心保持零第三方依赖。接线与复现命令见该文档 §5。
 
 **历代语料并列（当前 + 历史口径；勿与上表混读）**：
 
@@ -119,7 +138,7 @@ statute_rag/          核心包（纯标准库）
 scripts/              CLI 与 Web 服务：run_eval、search_cli、app（Web 界面）、bench、
                       gen_eval_report、check_doc_numbers、make_demo_corpus、ablate_retrieval 等
 app/index.html        Web 界面单页（无构建、无外链、断网可用）
-tests/                182 例单测（unittest，临时目录自造语料）
+tests/                201 例单测（unittest，临时目录自造语料）
 gold/                 入库金标 + 人工复核状态
 docs/                 生成的评测报告、metrics.json、实验记录
 ```
@@ -165,7 +184,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 
 3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
 
-- 单元测试 182 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
+- 单元测试 201 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
 
 ```bash
 # 30 秒检索演示（需语料）

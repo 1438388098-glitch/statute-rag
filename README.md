@@ -122,7 +122,7 @@ statute_rag/          core package (stdlib only)
 scripts/              CLIs and the web server: run_eval, search_cli, app (UI), bench,
                       gen_eval_report, check_doc_numbers, make_demo_corpus, ablate_retrieval, …
 app/index.html        Single-page UI (no build, no external assets, works offline)
-tests/                182 unit tests (unittest, no fixtures beyond tmpdirs)
+tests/                201 unit tests (unittest, no fixtures beyond tmpdirs)
 gold/                 committed gold sets + human-review status
 docs/                 generated eval report, metrics.json, experiment logs
 ```
@@ -165,7 +165,7 @@ Reproducing — three honest tiers:
 
 3. **Your own Chinese statute corpus**: the retrieval trio, synthetic gold and quality gate work out of the box; the committed `gold_real_38.jsonl` binds `gold_id`s to our import's chunk-row ids, so its numbers cannot be re-run on a different corpus — reuse the 38 questions by rebuilding row ids with `build_real_gold.py` (questions and source URLs carry over).
 
-- Unit tests: `python -m unittest discover -s tests` (182 cases). Gold sanity gate: `python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`. Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
+- Unit tests: `python -m unittest discover -s tests` (201 cases). Gold sanity gate: `python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`. Latency reference: `python scripts/bench.py` (machine-relative, for before/after comparisons only).
 
 ## Known failure cases
 

@@ -135,7 +135,7 @@ py -3.13 scripts/run_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_synt
 # 逐题明细
 py -3.13 scripts/analyze_real_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_real_38.jsonl
 
-# 单元测试（182 例）
+# 单元测试（201 例）
 py -3.13 -m unittest discover -s tests
 ```
 

@@ -65,5 +65,42 @@
       "recall_at_5_display": "96.6%"
     },
     "n": 177
+  },
+  "semantic_v7": {
+    "note": "语义重排 v7（多模型集成名次 + 并池 + 交叉 RRF 混合 + gateA）。上面 real/blind/synth 各节的数字是词法 hybrid 基线（reranker=None），两者口径不同、不可混用；机制与消融见 docs/retrieval-v7-semantic.md。",
+    "config": {
+      "embeddings": ["bge-small-zh-v1.5", "bge-base-zh-v1.5"],
+      "union_pool_k": 50,
+      "w_sem": 2.0,
+      "cross_model": "bge-reranker-base",
+      "cross_top_n": 10,
+      "w_cross": 3.0,
+      "gate": "like-hit 时跳过并池与重排"
+    },
+    "real38": {
+      "recall_at_5": 0.7105,
+      "recall_at_5_display": "71.1%",
+      "recall_at_10_display": "86.8%",
+      "recall_at_30_display": "97.4%",
+      "mrr_at_5": 0.501,
+      "hits": "27/38"
+    },
+    "blind100": {
+      "recall_at_5": 0.9,
+      "recall_at_5_display": "90.0%",
+      "recall_at_10_display": "90.0%",
+      "recall_at_30_display": "95.0%",
+      "mrr_at_5": 0.784,
+      "hits": "90/100"
+    },
+    "synth177": {
+      "recall_at_5": 0.9944,
+      "recall_at_5_display": "99.4%",
+      "mrr_at_5": 0.994
+    },
+    "targets": {
+      "blind_ge_90": true,
+      "real_ge_70": true
+    }
   }
 }
