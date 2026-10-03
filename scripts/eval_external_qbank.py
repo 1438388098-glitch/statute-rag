@@ -93,6 +93,8 @@ def main():
     parser.add_argument("--qbank", default=DEFAULT_QBANK, help="外部题库 JSONL（仓库外）")
     parser.add_argument("--corpus", default=os.path.join("data", "corpus_v5.jsonl"))
     parser.add_argument("--out", default=os.path.join("gold", "gold_external_v5.jsonl"))
+    parser.add_argument("--corpus-label", default=u"v5（外部隔离题库）",
+                        help="金标 corpus 字段的口径标签（第二轮题库用 v8 标签以示区分）")
     args = parser.parse_args()
 
     qbank = load_qbank(args.qbank)
@@ -113,7 +115,7 @@ def main():
             "verify_url": item.get("verify_url", u""),
             "unverified": bool(item.get("unverified")),
             "version_note": item.get("version_note", u""),
-            "corpus": u"v5（外部隔离题库）",
+            "corpus": args.corpus_label,
         }
         if gold_ids is None:
             reason = u"law 不在语料" if law_key(item["expect_law"]) not in index else u"law 在语料但 num %s 不存在" % item["expect_num"]

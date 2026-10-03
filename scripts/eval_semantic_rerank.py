@@ -12,6 +12,7 @@
 用法：
   py -3.13 scripts/eval_semantic_rerank.py
 可选：--cross / --no-cross、--w-sem、--w-cross、--union-k、--tag
+      --gold NAME=PATH（可重复）追加金标，用于在新留出金标上复核
 输出：data/flk/tmp/eval_v7_<tag>.json
 """
 from __future__ import print_function
@@ -28,7 +29,7 @@ sys.path.insert(0, REPO)
 from statute_rag.eval_harness import evaluate_multi_k
 from statute_rag.gold import load_gold
 from statute_rag.importer import load_corpus
-from statute_rag.retrieval import HybridRetriever
+from statute_rag.retrieval import BM25Retriever, HybridRetriever, LikeRetriever
 
 MODELS = os.path.join(REPO, "data", "flk", "models")
 TMP = os.path.join(REPO, "data", "flk", "tmp")
@@ -54,9 +55,24 @@ def main():
     ap.add_argument("--w-sem", type=float, default=None)
     ap.add_argument("--w-cross", type=float, default=None)
     ap.add_argument("--union-k", type=int, default=50)
+    ap.add_argument("--gold", action="append", default=[], metavar="NAME=PATH",
+                    help="追加金标（可重复，路径可给仓库外）。用于在新留出金标上复核")
+    ap.add_argument("--no-default-golds", action="store_true",
+                    help="只评 --gold 指定的金标（跳过三套默认金标，复核新金标时省时间）")
+    ap.add_argument("--lexical", action="store_true",
+                    help="同一批金标上另跑冻结词法基线（like/bm25/hybrid），供对照")
     ap.add_argument("--tag", default="v7")
     args = ap.parse_args()
     t0 = time.time()
+
+    golds = [] if args.no_default_golds else list(GOLD_FILES)
+    for spec in args.gold:
+        name, sep, path = spec.partition("=")
+        if not sep or not name or not path:
+            ap.error("--gold 需要 NAME=PATH 形式，收到：%s" % spec)
+        golds.append((name, os.path.abspath(path)))
+    if not golds:
+        ap.error("没有可评的金标：--no-default-golds 时必须给 --gold")
 
     import statute_rag.semantic_rerank as sr
     if args.w_sem is not None:
@@ -73,8 +89,10 @@ def main():
     hyb = HybridRetriever(corpus, reranker=reranker, pool_extra=pool)
 
     results = {}
-    for name, path in GOLD_FILES:
+    gold_cache = {}
+    for name, path in golds:
         gold = load_gold(path)
+        gold_cache[name] = gold
         multi = evaluate_multi_k(hyb, gold, ks=(5, 10, 20, 30))
         results[name] = dict(
             (str(k), {"R": m["recall_at_k"], "MRR": m["mrr"]})
@@ -82,6 +100,20 @@ def main():
         line = " ".join("R@%d=%.1f%%" % (k, m["recall_at_k"] * 100)
                         for k, m in sorted(multi.items()))
         print("%s %s (MRR@5=%.3f)" % (name, line, multi[5]["mrr"]), flush=True)
+
+    if args.lexical:
+        for rname, ret in [("like", LikeRetriever(corpus)),
+                           ("bm25", BM25Retriever(corpus)),
+                           ("hybrid", HybridRetriever(corpus))]:
+            for name, _ in golds:
+                multi = evaluate_multi_k(ret, gold_cache[name], ks=(5, 10, 20, 30))
+                key = "lexical:%s:%s" % (rname, name)
+                results[key] = dict(
+                    (str(k), {"R": m["recall_at_k"], "MRR": m["mrr"]})
+                    for k, m in multi.items())
+                line = " ".join("R@%d=%.1f%%" % (k, m["recall_at_k"] * 100)
+                                for k, m in sorted(multi.items()))
+                print("%s %s (MRR@5=%.3f)" % (key, line, multi[5]["mrr"]), flush=True)
 
     out = {"w_sem": sr.W_SEM, "w_cross": sr.W_CROSS,
            "union_k": args.union_k,
