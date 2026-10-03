@@ -111,6 +111,40 @@ class AppServerTest(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertIn("error", json.loads(body))
 
+    def test_laws_endpoint_covers_corpus_and_sorts_by_count(self):
+        status, body = _get(self.port, "/api/laws")
+        self.assertEqual(status, 200)
+        data = json.loads(body)
+        laws = data["laws"]
+        self.assertEqual(data["total"], len(laws))
+        self.assertEqual(laws, sorted(laws, key=lambda x: (-x["count"], x["law"])))
+        # 目录必须与语料严格对齐：法名集合与每部法的条数
+        expected = {}
+        for row in self.state.corpus:
+            expected[row["law"]] = expected.get(row["law"], 0) + 1
+        self.assertEqual({x["law"]: x["count"] for x in laws}, expected)
+        self.assertEqual(sum(x["count"] for x in laws), len(self.state.corpus))
+
+    def test_articles_endpoint_returns_articles_in_corpus_order(self):
+        law = self.state.corpus[0]["law"]
+        status, body = _get(self.port, "/api/articles?law=" + quote(law))
+        self.assertEqual(status, 200)
+        data = json.loads(body)
+        expected = [r for r in self.state.corpus if r["law"] == law]
+        self.assertEqual(data["law"], law)
+        self.assertEqual(data["count"], len(expected))
+        self.assertEqual([a["id"] for a in data["articles"]],
+                         [r["id"] for r in expected])
+        for field in ("id", "num", "text"):
+            self.assertIn(field, data["articles"][0])
+
+    def test_articles_unknown_law_is_empty_not_404(self):
+        status, body = _get(self.port, "/api/articles?law=" + quote("不存在的法"))
+        self.assertEqual(status, 200)
+        data = json.loads(body)
+        self.assertEqual(data["count"], 0)
+        self.assertEqual(data["articles"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

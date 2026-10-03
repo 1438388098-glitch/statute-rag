@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>法条检索 · statute-rag</title>
-<meta name="description" content="输入一句大白话，拿回最相关的法条原文与出处。词法检索底座，只给条文原文，不给法律意见。">
+<meta name="description" content="输入一句大白话，拿回最相关的法条原文与出处。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23faf9f6'/%3E%3Crect x='2' y='2' width='5' height='5' fill='%232745f0'/%3E%3Crect x='9' y='9' width='5' height='5' fill='%2317160f'/%3E%3C/svg%3E">
 <!--
   设计语言与站点一致（瑞士风）：暖白纸面 + 近黑 + 单一强调蓝，
@@ -86,17 +86,64 @@
   #go:hover { opacity: 0.88; }
   #go[disabled] { opacity: 0.45; cursor: default; }
 
-  .hint { margin: 0.6rem 0 0; font-size: 0.84rem; color: var(--text-muted); }
-  .hint kbd {
-    font-family: var(--font-mono); font-size: 0.74rem; border: 1px solid var(--border);
-    background: var(--code-bg); padding: 0.05rem 0.3rem;
-  }
   .samples { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0; padding: 0; }
   .samples button {
     font-size: 0.84rem; border: 1px solid var(--border); background: var(--surface);
     padding: 0.25rem 0.6rem; color: var(--text-muted);
   }
   .samples button:hover { border-color: var(--border-strong); color: var(--ink); }
+
+  /* 最近查过：本地历史，点击重查、可单条删除、可清空 */
+  .hist { margin-top: 1.6rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+  .hist-head { display: flex; align-items: baseline; gap: 0.7rem; }
+  .hist-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.04em; }
+  .hist-clear { font-size: 0.74rem; color: var(--text-muted); }
+  .hist-clear:hover { color: var(--ink); text-decoration: underline; }
+  .hist-list { list-style: none; margin: 0.5rem 0 0; padding: 0;
+    display: flex; flex-direction: column; gap: 0.1rem; }
+  .hist-list li { display: flex; align-items: baseline; gap: 0.6rem; }
+  .hist-list .q-btn { text-align: left; font-size: 0.9rem; color: var(--text);
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist-list .q-btn:hover { color: var(--accent); }
+  .hist-list .cnt { font-family: var(--font-mono); font-size: 0.72rem;
+    color: var(--text-muted); flex: none; }
+  .hist-list .cnt.zero { color: #b04a2f; }
+  .hist-list .del { font-size: 0.8rem; color: #b6b4aa; flex: none; padding: 0 0.2rem; }
+  .hist-list .del:hover { color: var(--ink); }
+
+  /* 按法律浏览：法名目录，点开改看法条列表 */
+  .browse { margin-top: 2rem; }
+  .browse[hidden] { display: none; }
+  .browse-head { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap;
+    border-bottom: 2px solid var(--border-strong); padding-bottom: 0.5rem; }
+  .browse-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.04em; flex: none; }
+  #law-filter { flex: 1; min-width: 8rem; font-family: var(--font-display); font-size: 0.86rem;
+    border: 1px solid var(--border); background: var(--surface); padding: 0.22rem 0.5rem;
+    border-radius: 0; color: var(--text); }
+  #law-filter:focus { outline: none; border-color: var(--border-strong); }
+  .browse-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
+    flex: none; }
+  .law-list { list-style: none; margin: 0.7rem 0 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 0.1rem 1.2rem; }
+  .law-list li { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0; }
+  .law-list .law-btn { text-align: left; font-size: 0.88rem; color: var(--text);
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .law-list .law-btn:hover { color: var(--accent); }
+  .law-list .n { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);
+    flex: none; }
+  .back { font-size: 0.82rem; color: var(--accent); margin: 0.2rem 0 0.9rem; display: inline-block; }
+  .back:hover { text-decoration: underline; }
+  .art-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
+    gap: 0.7rem; }
+  .art { background: var(--surface); border: 1.5px solid var(--border); padding: 0.8rem 0.95rem; }
+  .art:hover { border-color: var(--border-strong); }
+  .art .num { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);
+    display: block; margin-bottom: 0.25rem; }
+  .art .text { margin: 0; font-size: 0.93rem; color: var(--text); white-space: pre-wrap; }
+  .more { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.6rem; }
 
   /* 状态行 */
   .status {
@@ -106,13 +153,6 @@
   }
   .status .lead { color: var(--text); font-weight: 700; }
   .status .spacer { flex: 1; }
-  .expansion { margin: 0 0 1rem; }
-  .expansion code {
-    display: block; font-family: var(--font-mono); font-size: 0.78rem;
-    background: var(--code-bg); border: 1px solid var(--border);
-    padding: 0.5rem 0.7rem; word-break: break-all; color: var(--text-muted);
-  }
-  .expansion .tag { font-size: 0.78rem; color: var(--accent); font-weight: 700; }
 
   /* 结果卡片：直角白面，hover/选中靠边框加深 + 投影，不用彩色侧条 */
   .results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.85rem; }
@@ -135,7 +175,6 @@
     border: 1px solid var(--accent); padding: 0 0.3rem; line-height: 1.5;
   }
   .chan span.plain { color: var(--text-muted); border-color: var(--border); font-weight: 600; }
-  .score { font-family: var(--font-mono); font-size: 0.72rem; color: #a3a29a; }
   .text {
     margin: 0.55rem 0 0; font-size: 0.95rem; color: var(--text);
     display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
@@ -145,6 +184,10 @@
   mark { background: none; color: inherit; font-weight: 700; border-bottom: 2px solid var(--accent); }
   .card-foot { display: flex; align-items: baseline; gap: 0.8rem; margin-top: 0.6rem; }
   .card-foot .id { font-family: var(--font-mono); font-size: 0.7rem; color: #a3a29a; }
+  .card-foot .spacer { flex: 1; }
+  .copy { font-size: 0.76rem; color: var(--text-muted); flex: none; }
+  .copy:hover { color: var(--accent); text-decoration: underline; }
+  .copy.done { color: var(--accent); }
   .toggle { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
   .toggle:hover { text-decoration: underline; }
 
@@ -155,26 +198,21 @@
   .panel ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.9rem; color: var(--text-muted); }
   .panel ul li { margin: 0.25rem 0; }
   .panel ul li::marker { color: var(--accent); }
+  .panel .alt { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin: 0.7rem 0 0; }
+  .panel .alt .q-btn { font-size: 0.84rem; border: 1px solid var(--border);
+    background: var(--surface); padding: 0.25rem 0.6rem; color: var(--text-muted); }
+  .panel .alt .q-btn:hover { border-color: var(--border-strong); color: var(--ink); }
   .panel code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--code-bg);
     border: 1px solid var(--border); padding: 0.05rem 0.3rem; }
-  .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 1rem; margin: 0.8rem 0 0;
-    font-size: 0.86rem; }
-  .kv dt { color: var(--text-muted); }
-  .kv dd { margin: 0; }
 
   .skeleton { border: 1.5px solid var(--border); background: var(--surface); padding: 1rem 1.1rem; }
   .bar { height: 0.7rem; background: var(--bg-soft); margin-bottom: 0.5rem; animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
-  footer {
-    max-width: var(--maxw); margin-inline: auto; padding: 1.2rem 1.25rem 3rem;
-    border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-muted);
-  }
-  footer p { margin: 0.3rem 0; }
   @media (max-width: 34rem) {
     #go { padding: 0 1rem; }
     .card-head .spacer { display: none; }
-    .score { width: 100%; }
   }
 </style>
 </head>
@@ -196,20 +234,28 @@
            aria-label="检索问题" spellcheck="false">
     <button id="go" type="submit">检索</button>
   </form>
-  <p class="hint">
-    按 <kbd>/</kbd> 聚焦输入框，<kbd>Esc</kbd> 清空，<kbd>↑</kbd><kbd>↓</kbd> 在结果间移动。
-    这是词法检索：按字面与同义词找条文，不做语义理解。
-  </p>
   <ul class="samples" id="samples"></ul>
+
+  <section class="hist" id="hist" hidden>
+    <div class="hist-head">
+      <span class="hist-title">最近查过</span>
+      <button type="button" class="hist-clear" id="hist-clear">清空</button>
+    </div>
+    <ul class="hist-list" id="hist-list"></ul>
+  </section>
+
+  <section class="browse" id="browse">
+    <div class="browse-head">
+      <span class="browse-title">按法律浏览</span>
+      <input type="search" id="law-filter" placeholder="筛选法名" aria-label="筛选法名"
+             autocomplete="off" spellcheck="false">
+      <span class="browse-count" id="browse-count"></span>
+    </div>
+    <ul class="law-list" id="law-list"></ul>
+  </section>
 
   <div id="out" aria-live="polite"></div>
 </main>
-
-<footer>
-  <p>按 25,273 条 / 432 部法条检索原始文本；命中包含出处（法律名 + 条号 + 库里编号），可回跳核对。</p>
-  <p>这里只做检索与呈现，给的是条文原文，不是法律意见；真实问句 Recall@5 44.7%，剩余失败逐题公开在仓库文档里。</p>
-  <p>注：语料里 14,212 / 25,273 行来自公报页块，一行可能含多条（条号以正文为准），这是已知的解析遗留；检索按行返回，不做二次切分。</p>
-</footer>
 
 <script>
 (function () {
@@ -233,10 +279,152 @@
     go: document.getElementById("go"),
     out: document.getElementById("out"),
     badge: document.getElementById("badge"),
-    samples: document.getElementById("samples")
+    samples: document.getElementById("samples"),
+    hist: document.getElementById("hist"),
+    histList: document.getElementById("hist-list"),
+    histClear: document.getElementById("hist-clear"),
+    browse: document.getElementById("browse"),
+    lawFilter: document.getElementById("law-filter"),
+    lawList: document.getElementById("law-list"),
+    browseCount: document.getElementById("browse-count")
   };
 
-  var state = { k: 10, inflight: null, results: [], active: -1, lastQuery: "" };
+  var state = { k: 10, inflight: null, results: [], active: -1, lastQuery: "", lastData: null };
+
+  // 搜索历史：localStorage 持久化，最多 12 条；记命中数便于回看哪次查空了
+  var HIST_KEY = "statute-rag.history.v1";
+  var HIST_MAX = 12;
+
+  function histLoad() {
+    try {
+      var raw = window.localStorage.getItem(HIST_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function histSave(list) {
+    try { window.localStorage.setItem(HIST_KEY, JSON.stringify(list)); }
+    catch (e) { /* 隐私模式下不可写，忽略 */ }
+  }
+
+  function histAdd(query, hits) {
+    var list = histLoad().filter(function (it) { return it.q !== query; });
+    list.unshift({ q: query, hits: hits, t: Date.now() });
+    histSave(list.slice(0, HIST_MAX));
+    renderHist();
+  }
+
+  function renderHist() {
+    var list = histLoad();
+    if (!list.length) { el.hist.hidden = true; return; }
+    el.hist.hidden = false;
+    el.histList.innerHTML = list.map(function (it, i) {
+      var cnt = typeof it.hits === "number"
+        ? '<span class="cnt' + (it.hits ? "" : " zero") + '">' + it.hits + " 条</span>"
+        : "";
+      return "<li>" +
+        '<button type="button" class="q-btn" data-i="' + i + '">' + esc(it.q) + "</button>" +
+        cnt +
+        '<button type="button" class="del" data-i="' + i + '" title="删除">×</button>' +
+      "</li>";
+    }).join("");
+    Array.prototype.forEach.call(el.histList.querySelectorAll(".q-btn"), function (b) {
+      b.addEventListener("click", function () {
+        var it = histLoad()[Number(b.getAttribute("data-i"))];
+        if (!it) { return; }
+        el.q.value = it.q;
+        run(it.q);
+      });
+    });
+    Array.prototype.forEach.call(el.histList.querySelectorAll(".del"), function (b) {
+      b.addEventListener("click", function () {
+        var list2 = histLoad();
+        list2.splice(Number(b.getAttribute("data-i")), 1);
+        histSave(list2);
+        renderHist();
+      });
+    });
+  }
+
+  el.histClear.addEventListener("click", function () {
+    histSave([]);
+    renderHist();
+  });
+  renderHist();
+
+  // ── 按法律浏览 ──────────────────────────────────────────────
+  var LAW_CACHE = null;
+
+  function loadLaws() {
+    if (LAW_CACHE) { renderLawList(el.lawFilter.value); return; }
+    fetch("/api/laws").then(function (r) { return r.json(); }).then(function (d) {
+      LAW_CACHE = d.laws || [];
+      renderLawList(el.lawFilter.value);
+    }).catch(function () {
+      el.browseCount.textContent = "法名目录不可用";
+    });
+  }
+
+  function renderLawList(filter) {
+    if (!LAW_CACHE) { return; }
+    var key = (filter || "").trim();
+    var list = key
+      ? LAW_CACHE.filter(function (x) { return x.law.indexOf(key) >= 0; })
+      : LAW_CACHE;
+    el.browseCount.textContent = list.length + " / " + LAW_CACHE.length + " 部";
+    el.lawList.innerHTML = list.slice(0, 300).map(function (x) {
+      return "<li>" +
+        '<button type="button" class="law-btn" title="' + esc(x.law) + '">' + esc(x.law) + "</button>" +
+        '<span class="n">' + x.count + "</span>" +
+      "</li>";
+    }).join("") + (list.length > 300 ? '<li class="more">只列出前 300 部，继续输入可缩小范围</li>' : "");
+    Array.prototype.forEach.call(el.lawList.querySelectorAll(".law-btn"), function (b) {
+      b.addEventListener("click", function () { openLaw(b.getAttribute("title")); });
+    });
+  }
+
+  el.lawFilter.addEventListener("input", function () {
+    renderLawList(el.lawFilter.value);
+  });
+
+  function openLaw(law) {
+    el.browse.hidden = true;
+    el.q.value = "";
+    el.out.innerHTML = '<div class="skeleton"><div class="bar" style="width:60%"></div>' +
+      '<div class="bar" style="width:92%"></div></div>';
+    fetch("/api/articles?law=" + encodeURIComponent(law) + "&limit=300")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { renderArticles(d); })
+      .catch(function () {
+        el.out.innerHTML = '<div class="panel"><h2>取不到这部法的条文。</h2></div>';
+      });
+  }
+
+  function renderArticles(d) {
+    var more = d.count > d.articles.length
+      ? '<p class="more">共 ' + d.count + " 条，只显示前 " + d.articles.length + " 条；用检索定位具体条文。</p>"
+      : "";
+    el.out.innerHTML =
+      '<button type="button" class="back" id="back-btn">← 返回法律目录</button>' +
+      '<div class="status"><span class="lead">' + esc(d.law) + "</span>" +
+        "<span>" + d.count + " 条</span></div>" +
+      '<ul class="art-list">' + d.articles.map(function (a) {
+        return '<li class="art"><span class="num">' + esc(a.num) + "</span>" +
+          '<p class="text">' + esc(a.text) + "</p></li>";
+      }).join("") + "</ul>" + more;
+    state.results = [];
+    state.lastData = null;
+    document.getElementById("back-btn").addEventListener("click", function () {
+      el.out.innerHTML = "";
+      showBrowse();
+    });
+  }
+
+  function showBrowse() {
+    el.browse.hidden = false;
+    loadLaws();
+  }
 
   SAMPLES.forEach(function (s) {
     var li = document.createElement("li");
@@ -320,41 +508,36 @@
         '<span class="num">' + esc(r.num) + "</span>" +
         '<span class="spacer"></span>' +
         '<span class="chan">' + channelBadges(r.channels) + "</span>" +
-        '<span class="score">' + Number(r.score).toFixed(4) + "</span>" +
       "</div>" +
       '<p class="text">' + highlight(r.text, query) + "</p>" +
       '<div class="card-foot">' +
         '<span class="id mono">id=' + esc(r.id) + "</span>" +
         (long ? '<button type="button" class="toggle">展开全文</button>' : "") +
+        '<span class="spacer"></span>' +
+        '<button type="button" class="copy" title="复制条文与出处">复制</button>' +
       "</div>" +
     "</li>";
   }
 
-  function legend(channels) {
-    var names = (channels || []).map(function (c) { return CHAN_LABEL[c] || c; });
-    return "本次启用的通道：" + names.join(" / ");
-  }
-
   function renderResults(data) {
+    el.browse.hidden = true;
+    histAdd(data.query, data.results.length);
+    if (!data.results.length) { renderNoHit(data); return; }
+
     var head = '<div class="status">' +
       '<span class="lead">显示前 ' + data.results.length + " 条</span>" +
-      "<span>候选池 " + data.candidates + " 条（每路取前 " + data.depth + " 名求并集）</span>" +
       "<span>用时 " + data.took_ms + " ms</span>" +
       '<span class="spacer"></span>' +
-      "<span>" + esc(legend(data.channels)) + "</span>" +
       (data.truncated ? "<span>查询已截断到 " + data.query.length + " 字</span>" : "") +
     "</div>";
 
     var html = head;
-    if (data.expanded && data.expanded !== data.query) {
-      html += '<div class="expansion"><span class="tag">同义词典扩写</span>' +
-        "<code>" + esc(data.expanded) + "</code></div>";
-    }
     html += '<ul class="results">' + data.results.map(function (r) {
       return card(r, data.query);
     }).join("") + "</ul>";
     el.out.innerHTML = html;
     state.results = Array.prototype.slice.call(el.out.querySelectorAll(".card"));
+    state.lastData = data;
     state.active = -1;
     bindCards();
   }
@@ -363,6 +546,7 @@
     state.results.forEach(function (li) {
       li.addEventListener("click", function (ev) {
         if (ev.target.classList.contains("toggle")) { return; }
+        if (ev.target.classList.contains("copy")) { return; }
         setActive(state.results.indexOf(li));
       });
       var t = li.querySelector(".toggle");
@@ -373,7 +557,40 @@
           t.textContent = open ? "收起" : "展开全文";
         });
       }
+      var cp = li.querySelector(".copy");
+      if (cp) {
+        cp.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          var i = Number(li.getAttribute("data-i")) - 1;
+          var r = state.lastData && state.lastData.results[i];
+          if (!r) { return; }
+          var payload = r.law + " " + r.num + "\n" + r.text + "\n（" + r.law + " " + r.num + "，库内编号 " + r.id + "）";
+          copyText(payload, cp);
+        });
+      }
     });
+  }
+
+  function copyText(text, btn) {
+    function done() {
+      var old = btn.textContent;
+      btn.textContent = "已复制";
+      btn.classList.add("done");
+      setTimeout(function () { btn.textContent = old; btn.classList.remove("done"); }, 1200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallback(); });
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { /* 忽略 */ }
+      document.body.removeChild(ta);
+    }
   }
 
   function setActive(i) {
@@ -386,18 +603,28 @@
   }
 
   function renderEmpty() {
-    var kind = el.q.value.trim()
-      ? "没有命中任何条文。"
-      : "输入一句话就能查。";
-    el.out.innerHTML = '<div class="panel"><h2>' + kind + "</h2>" +
-      "<p>这是一个词法检索底座（字符二元组 BM25 + 同义词典扩展 + 精确子串，三路融合），不是语义检索：<strong>换一组写法、或直接给出关键法律词汇，命中率会明显不同</strong>。</p>" +
-      "<ul>" +
-        "<li>口语词可以试，比如「坐牢」「拖欠工资」——词典会把它们改写成法条用词再检一路；</li>" +
-        "<li>问题里有法条原句片段时，精确子串通道会直接命中；</li>" +
-        "<li>纯场景描述、没有共同词汇的问法，现在检不到——语义通道在 v0.2 路线图上。</li>" +
-      "</ul>" +
-      "<dl class=\"kv\" id=\"meta-kv\"></dl>" +
-    "</div>";
+    // 首屏留白，不摆任何引导语
+    el.out.innerHTML = "";
+    state.results = [];
+    state.lastData = null;
+  }
+
+  function renderNoHit(data) {
+    el.browse.hidden = true;
+    var alt = SAMPLES.slice(0, 4).map(function (s) {
+      return '<button type="button" class="q-btn">' + esc(s) + "</button>";
+    }).join("");
+    el.out.innerHTML = '<div class="panel"><h2>没有命中任何条文。</h2>' +
+      "<p>换个说法，或直接写关键法律词，比如「劳动合同」「工伤认定」。</p>" +
+      '<ul class="alt">' + alt + "</ul></div>";
+    state.results = [];
+    state.active = -1;
+    Array.prototype.forEach.call(el.out.querySelectorAll(".alt .q-btn"), function (b) {
+      b.addEventListener("click", function () {
+        el.q.value = b.textContent;
+        run(b.textContent);
+      });
+    });
   }
 
   function renderLoading() {
@@ -418,15 +645,6 @@
   function fillMeta() {
     fetch("/api/meta").then(function (r) { return r.json(); }).then(function (m) {
       el.badge.textContent = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
-      var kv = document.getElementById("meta-kv");
-      if (kv) {
-        kv.innerHTML =
-          "<dt>语料</dt><dd class=\"mono\">" + esc(m.corpus.path) + "　" +
-            m.corpus.articles.toLocaleString() + " 条 / " + m.corpus.laws + " 部</dd>" +
-          "<dt>检索</dt><dd>" + esc(m.retriever) + "</dd>" +
-          "<dt>参数</dt><dd class=\"mono\">融合深度 " + m.fusion_depth +
-            "　同义词典 " + m.synonym_entries + " 条　建索引 " + m.build_seconds + " 秒</dd>";
-      }
     }).catch(function () {
       el.badge.textContent = "元信息不可用";
     });
@@ -434,7 +652,7 @@
 
   function run(query) {
     var q = (query || "").trim();
-    if (!q) { renderEmpty(); return; }
+    if (!q) { renderEmpty(); showBrowse(); return; }
     state.lastQuery = q;
     if (state.inflight) { state.inflight.abort(); }
     var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -481,7 +699,7 @@
       if (el.q.value) {
         el.q.value = "";
         renderEmpty();
-        fillMeta();
+        showBrowse();
       }
       el.q.blur();
       return;
@@ -504,6 +722,7 @@
 
   renderEmpty();
   fillMeta();
+  showBrowse();
   el.q.focus();
 })();
 </script>

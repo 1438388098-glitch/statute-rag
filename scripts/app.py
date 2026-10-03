@@ -69,6 +69,31 @@ class AppState(object):
         self.k = k
         self.build_seconds = build_seconds
         self.synonyms = synonyms
+        self._law_index = self._build_law_index()
+
+    def _build_law_index(self):
+        """法名 -> 该法条文列表（按语料原序）。浏览用，与检索排名无关。"""
+        index = {}
+        for row in self.corpus:
+            index.setdefault(row["law"], []).append(row)
+        return index
+
+    def laws(self):
+        """法名目录：按条文数降序（并列按法名），只给法名与条数。"""
+        items = [{"law": law, "count": len(rows)}
+                 for law, rows in self._law_index.items()]
+        items.sort(key=lambda x: (-x["count"], x["law"]))
+        return {"total": len(items), "laws": items}
+
+    def articles(self, law, limit=200):
+        """某部法的条文（按语料原序）。法名不存在时返回空列表而非报错。"""
+        rows = self._law_index.get(law) or []
+        return {
+            "law": law,
+            "count": len(rows),
+            "articles": [{"id": r["id"], "num": r["num"], "text": r["text"]}
+                         for r in rows[:max(1, min(limit, 500))]],
+        }
 
     def meta(self):
         return {
@@ -173,6 +198,18 @@ def make_handler(state):
                 return
             if path == "/api/meta":
                 self._send_json(state.meta())
+                return
+            if path == "/api/laws":
+                self._send_json(state.laws())
+                return
+            if path == "/api/articles":
+                params = parse_qs(parsed.query)
+                law = (params.get("law") or [""])[0]
+                try:
+                    limit = int((params.get("limit") or [200])[0])
+                except (TypeError, ValueError):
+                    limit = 200
+                self._send_json(state.articles(law, limit))
                 return
             if path == "/api/search":
                 params = parse_qs(parsed.query)
