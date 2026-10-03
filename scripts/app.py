@@ -46,9 +46,11 @@ from statute_rag.query_expansion import load_synonyms  # noqa: E402
 from statute_rag.retrieval import HYBRID_FUSION_DEPTH, HybridRetriever  # noqa: E402
 
 APP_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app", "index.html")
-# 默认用条级重建版 v5：v3 里 14,212 行「公报页块行」已全部换成校验过的条级正文
-# （v4 换掉干净源件覆盖的 132 部；v5 补上剩下 104 部，仅 1 部公报碎片化文书仍缺源）
-DEFAULT_CORPUS = os.path.join("data", "corpus_v5.jsonl")
+# 默认用条级重建版 v6：在 v5（全部公报页块行已换条级正文）之上，刑法主文换成
+# 含十二个修正案的整合版（醉驾/帮信等「之一」条文可检），并补上外部题库量出的
+# 7 部缺法（社会保险法、工伤保险条例、著作权法、专利法、环境保护法、税收征收
+# 管理法、消费者权益保护法正文）
+DEFAULT_CORPUS = os.path.join("data", "corpus_v6.jsonl")
 DEFAULT_K = 10
 MAX_K = 50
 # 超长查询只会稀释检索信号（且会让 URL 过长），截断比报错友好；

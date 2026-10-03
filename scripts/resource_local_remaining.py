@@ -55,6 +55,22 @@ ID_BASE = 997000  # 命名空间：995000 干净源件段、996000 去交错段
 COVERAGE_MIN = 0.90
 DROP_MAX_RATIO = 0.05
 NUM_RE = re.compile(u"^第([一二三四五六七八九十百千零〇]+)条")
+NUM_FULL_RE = re.compile(u"^第([一二三四五六七八九十百千零〇]+)条(?:之([一二三四五六七八九十]+))?$")
+
+
+def num_sort_key(num):
+    """条号 → (基础号, 之N号) 排序键。
+
+    「第一百二十条之一」的条号里，`NUM_RE` 只抓到基础号 120——十二个刑法修正案
+    插入的「之一/之二」条文会被折成与基础条同号，严格递增检查必死。完整键把
+    之N 序编进元组：「第一百二十条」(120,0) < 「第一百二十条之一」(120,1) <
+    「第一百二十一条」(121,0)。解析不了返回 None，调用方判死，不静默放过。
+    """
+    m = NUM_FULL_RE.match(num or u"")
+    if not m:
+        return None
+    sub = cn2int(m.group(2)) if m.group(2) else 0
+    return (cn2int(m.group(1)), sub)
 
 
 # 公式/表格尾：有些条以算式收尾（如「…计算公式如下：抵免限额＝…应纳税所得总额」），
@@ -86,13 +102,23 @@ def quality(lines):
                 soft += 1
         else:
             dropped += 1
-    nums = []
-    for a in kept:
-        m = NUM_RE.match(a["num"])
-        if m:
-            nums.append(cn2int(m.group(1)))
-    mono = all(nums[i] < nums[i + 1] for i in range(len(nums) - 1))
-    complete = bool(nums) and nums == list(range(1, len(nums) + 1))
+    # 条号排序键（基础号, 之N号）：普通文档与旧逻辑逐位等价（之N号恒 0），
+    # 含「之一/之二」的文档（刑法整合版）不再被折叠同号误杀。
+    keys = [num_sort_key(a["num"]) for a in kept]
+    if not keys or any(k is None for k in keys):
+        nums, mono, complete = [], False, False
+    else:
+        mono = all(keys[i] < keys[i + 1] for i in range(len(keys) - 1))
+        nums = [k[0] for k in keys]
+        complete = False
+        if mono:
+            bases = [k[0] for k in keys]
+            # 基础号 1..N 无缺号；每个基础号的 之N 序从 0 连续（之二 存在则 之一 必存在）
+            sub_run = {}
+            for b, s in keys:
+                sub_run.setdefault(b, []).append(s)
+            complete = (set(bases) == set(range(1, bases[-1] + 1))
+                        and all(v == list(range(len(v))) for v in sub_run.values()))
     total_chars = sum(len(l) for l in lines)
     cov = sum(len(a["text"]) for a in kept) / float(total_chars or 1)
     return {"arts": arts, "kept": kept, "nums": nums, "mono": mono,

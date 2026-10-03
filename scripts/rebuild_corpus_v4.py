@@ -43,8 +43,6 @@ def main():
     ap.add_argument("--replacement", action="append", required=True,
                     help=u"条级替代片段，可重复；**按顺序优先**，前一个文件已覆盖的法不再被后者替换")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--gold", default="")
-    ap.add_argument("--gold-out", default="")
     ap.add_argument("--gold-synth", default="",
                     help=u"合成金标（按 law+num 迁移；它同样绑定被删掉的 v1 行）")
     ap.add_argument("--gold-synth-out", default="")
@@ -53,6 +51,18 @@ def main():
                     help=u"仍无干净源的 v1 行：drop 全部不带入 / keep 原样保留 / "
                          u"drop-pageblock 只丢页块为主的法（页块比例 ≥ 0.5），"
                          u"v1 本身已是条级的法保留（默认仍为 drop，与 v4 口径一致）")
+    ap.add_argument("--drop-law", action="append", default=[],
+                    help=u"按法名整部删除 base 里的行（不限 id 段），用于替换非 v1 段的"
+                         u"既有法（如 v6 用整合版刑法替换 1997 基础文本），可重复")
+    ap.add_argument("--id-base", type=int, default=995000,
+                    help=u"替代行重编号起始（v4/v5 用 995000 段；v5 语料已占用该段，"
+                         u"在其上重组时须换段避免 id 冲突）")
+    ap.add_argument("--gold", action="append", default=[],
+                    help=u"金标 JSONL，可重复，与 --gold-out 按顺序配对")
+    ap.add_argument("--gold-out", action="append", default=[],
+                    help=u"金标输出 JSONL，可重复，与 --gold 按顺序配对")
+    ap.add_argument("--gold-label", default=u"v4（条级重建）",
+                    help=u"迁移记录 remap.corpus 的口径标注（v5/v6 重组时相应更新）")
     args = ap.parse_args()
 
     repl = []
@@ -78,12 +88,17 @@ def main():
     base_laws = set()
     v1_stat = {}          # law -> [总行数, 含 >1 个「第X条」的行数]
     v1_rows = []          # 先收 v1 行，判完页块比例再决定去留
+    drop_laws = set(args.drop_law)
     for line in io.open(args.base, encoding="utf-8"):
         line = line.strip()
         if not line:
             continue
         r = json.loads(line)
         base_laws.add(r["law"])
+        if r["law"] in drop_laws:
+            # 显式点名删除（不限 id 段）：整部替换既有法的正文
+            dropped_rows.append(r)
+            continue
         is_v1 = (not r.get("meta")) and r["id"] < V1_MAX_ID
         if not is_v1:
             kept.append(r)
@@ -95,7 +110,7 @@ def main():
             s[1] += 1
 
     for r in v1_rows:
-        if r["law"] in repl_laws:
+        if r["law"] in repl_laws or r["law"] in drop_laws:
             dropped_rows.append(r)
             continue
         tot, multi = v1_stat[r["law"]]
@@ -112,7 +127,7 @@ def main():
     out_rows = kept + repl
     # 替代行统一重编号：不同来源片段的 id 段可能互相重叠（990000 段与 995000 段）
     for i, r in enumerate(repl, 1):
-        r["id"] = 995000 + i
+        r["id"] = args.id_base + i
     # 质检门：id 唯一 / 非空正文 / 以条号开头
     ids = [r["id"] for r in out_rows]
     assert len(ids) == len(set(ids)), u"id 冲突"
@@ -139,18 +154,21 @@ def main():
     for law, n in sorted(dropped_laws.items(), key=lambda x: -x[1]):
         rep.append(u"%s\tv1 行数 %d" % (law, n))
 
-    # ── 金标条级迁移 ──
-    if args.gold and args.gold_out:
+    # ── 金标条级迁移（--gold/--gold-out 可重复，按顺序配对）──
+    if len(args.gold) != len(args.gold_out):
+        raise SystemExit(u"--gold 与 --gold-out 数量不一致：按顺序配对")
+    if args.gold:
         index = {}
         by_id = {}
         for r in out_rows:
             index.setdefault((r["law"], r["num"]), []).append(r["id"])
             by_id[r["id"]] = r
         out_ids = set(ids)
+    for gold_in, gold_out in zip(args.gold, args.gold_out):
         out_gold = []
         stat = {"ok": 0, "ev_ok": 0, "partial": 0, "fail": 0}
         detail = []
-        for line in io.open(args.gold, encoding="utf-8"):
+        for line in io.open(gold_in, encoding="utf-8"):
             line = line.strip()
             if not line:
                 continue
@@ -175,7 +193,7 @@ def main():
                 "from_ids": g.get("gold_ids"),
                 "to_ids": new_ids[:3],
                 "evidence_verified": bool(verified),
-                "corpus": u"v4（条级重建）",
+                "corpus": args.gold_label,
             }
             out_gold.append(rec)
             if not new_ids:
@@ -186,19 +204,19 @@ def main():
                 stat["partial"] += 1
             detail.append(u"%s\t新 id %s\tevidence 逐字命中 %s\t原 id %s"
                           % (g["qid"], new_ids[:3], bool(verified), g.get("gold_ids")))
-        with io.open(args.gold_out, "w", encoding="utf-8", newline="\n") as fh:
+        with io.open(gold_out, "w", encoding="utf-8", newline="\n") as fh:
             for g in out_gold:
                 fh.write(json.dumps(g, ensure_ascii=False) + "\n")
         rep += [
             u"",
-            u"— 金标迁移（%s → %s）—" % (args.gold, args.gold_out),
+            u"— 金标迁移（%s → %s）—" % (gold_in, gold_out),
             u"题数：%d" % len(out_gold),
             u"evidence 在新行里逐字命中：%d" % stat["ev_ok"],
             u"迁到新 id 但 evidence 未逐字命中：%d" % stat["partial"],
             u"完全迁不到（无新行且旧行已删）：%d" % stat["fail"],
         ] + detail
-        print(u"金标迁移：%d 题；evidence 逐字命中 %d；未命中 %d；迁不到 %d"
-              % (len(out_gold), stat["ev_ok"], stat["partial"], stat["fail"]))
+        print(u"金标迁移 %s：%d 题；evidence 逐字命中 %d；未命中 %d；迁不到 %d"
+              % (gold_in, len(out_gold), stat["ev_ok"], stat["partial"], stat["fail"]))
 
     if args.gold_synth and args.gold_synth_out:
         index2 = {}
