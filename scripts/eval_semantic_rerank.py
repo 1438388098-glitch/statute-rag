@@ -61,6 +61,12 @@ def main():
                     help="只评 --gold 指定的金标（跳过三套默认金标，复核新金标时省时间）")
     ap.add_argument("--lexical", action="store_true",
                     help="同一批金标上另跑冻结词法基线（like/bm25/hybrid），供对照")
+    ap.add_argument("--corpus", default=os.path.join(REPO, "data", "corpus_v6.jsonl"),
+                    help="语料路径（补法版本用 data/corpus_v7.jsonl）")
+    ap.add_argument("--emb", default=os.path.join(TMP, "ctx_doc_cache.npz"),
+                    help="小模型条文向量（补法版本用 ctx_doc_cache_v7.npz）")
+    ap.add_argument("--emb-base", default=os.path.join(TMP, "ctx_doc_cache_base.npz"),
+                    help="大模型条文向量（补法版本用 ctx_doc_cache_base_v7.npz）")
     ap.add_argument("--tag", default="v7")
     args = ap.parse_args()
     t0 = time.time()
@@ -80,11 +86,13 @@ def main():
     if args.w_cross is not None:
         sr.W_CROSS = args.w_cross
 
-    corpus = load_corpus(os.path.join(REPO, "data", "corpus_v6.jsonl"))
-    pool = sr.SemanticPool(corpus, [p for p, _ in EMB_SPECS],
-                           [d for _, d in EMB_SPECS], union_k=args.union_k)
+    corpus = load_corpus(args.corpus)
+    emb_specs = [(args.emb, os.path.join(MODELS, "bge-small-zh-v1.5")),
+                 (args.emb_base, os.path.join(MODELS, "bge-base-zh-v1.5"))]
+    pool = sr.SemanticPool(corpus, [p for p, _ in emb_specs],
+                           [d for _, d in emb_specs], union_k=args.union_k)
     reranker = sr.SemanticReranker(
-        corpus, [p for p, _ in EMB_SPECS], [d for _, d in EMB_SPECS],
+        corpus, [p for p, _ in emb_specs], [d for _, d in emb_specs],
         pool=pool, cross_model_dir=None if args.no_cross else args.cross)
     hyb = HybridRetriever(corpus, reranker=reranker, pool_extra=pool)
 

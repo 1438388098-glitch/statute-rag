@@ -57,6 +57,9 @@ def main():
     ap.add_argument("--law", action="append", required=True,
                     help=u"要取源的法律名（语料写法），可重复")
     ap.add_argument("--min-cov", type=float, default=0.35)
+    ap.add_argument("--id-base", type=int, default=999000,
+                    help=u"条级 id 起始号段（默认 999000，与 v6 那批一致；"
+                         u"再补一批时改用语料当前最大 id 之后，避免撞号）")
     ap.add_argument("--out", required=True)
     ap.add_argument("--report", required=True)
     args = ap.parse_args()
@@ -97,7 +100,7 @@ def main():
             })
 
     for i, f in enumerate(frags, 1):
-        f["id"] = 999000 + i
+        f["id"] = args.id_base + i
     with io.open(args.out, "w", encoding="utf-8", newline="\n") as fh:
         for f in frags:
             fh.write(json.dumps(f, ensure_ascii=False) + "\n")
