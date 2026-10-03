@@ -284,6 +284,19 @@ python scripts/build_real_gold.py --corpus data/corpus_v3.jsonl \
 
 > 注意：`--spec gold/gold_real_v3_batch1_spec.jsonl --dropped` 复跑输出「0 条」，是因为那 2 题在写 spec 前就被移除、从未进 batch1 spec；它们的留痕在**候选池**（上一条命令可列出）。batch1 的 37/37 是「进了 spec 且全部核验通过」的口径。
 
+## 13. v6 口径（2026-10-03，当前）
+
+本文 §1–12 是 v0.1–v3 时期的历史记录，保留不动。**当前口径**：
+
+- 语料 v6（25,626 条 / 438 部，整合版刑法 + 补 7 部缺法）；金标 9 处过时条目
+  已按现行文本对齐（`scripts/check_gold.py` 结构门禁定位、
+  `scripts/fix_gold_real38_stale.py` 修复，每行带 gold_fix 审计字段）；
+- 真实 38 题 hybrid **R@5 52.6%（20/38）**、R@30 94.7%（扩展通道权重重标定
+  2.5→1.5，见 [retrieval-v6-retune.md](retrieval-v6-retune.md)）；
+- 另有**外部隔离题库 100 题**（出题代理盲写、只验不调）：hybrid R@5 70.0%。
+  三套金标的当前数字以 [metrics.json](metrics.json) 与
+  [eval_report.md](eval_report.md) 为单一来源。
+
 ## English summary
 
 We built a **real-question gold set v1 (38 questions)** sourced from genuine legal Q&A posts on Baidu Zhidao (URLs recorded per question). Each question is mapped by an LLM to 1-3 corpus rows whose text verifiably contains an evidence sentence answering the question (substring check enforced by script); **human legal review is still pending**. Queries are the raw colloquial questions, sent to the retrievers unchanged.
