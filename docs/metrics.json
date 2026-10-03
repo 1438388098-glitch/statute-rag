@@ -67,7 +67,7 @@
     "n": 177
   },
   "semantic_v7": {
-    "note": "语义重排 v7（多模型集成名次 + 并池 + 交叉 RRF 混合 + gateA）。上面 real/blind/synth 各节的数字是词法 hybrid 基线（reranker=None），两者口径不同、不可混用；机制与消融见 docs/retrieval-v7-semantic.md。",
+    "note": "语义重排 v7（多模型集成名次 + 并池 + 交叉 RRF 混合 + gateA）。上面 real/blind/synth 各节的数字是词法 hybrid 基线（reranker=None），两者口径不同、不可混用；机制与消融见 docs/retrieval-v7-semantic.md。旧口径的 90.0% 是第一轮盲写集的调参内数字，既含 w_cross 调参、题面又有 32/100 近乎照抄条文，**留出数字以 blind_v8_holdout 为准（64.2%）**。",
     "config": {
       "embeddings": ["bge-small-zh-v1.5", "bge-base-zh-v1.5"],
       "union_pool_k": 50,
@@ -86,6 +86,7 @@
       "hits": "27/38"
     },
     "blind100": {
+      "role": "第一轮隔离题库，v7 调参所用（w_cross 在本集上选），不是留出数字",
       "recall_at_5": 0.9,
       "recall_at_5_display": "90.0%",
       "recall_at_10_display": "90.0%",
@@ -93,14 +94,39 @@
       "mrr_at_5": 0.784,
       "hits": "90/100"
     },
+    "blind_v8_holdout": {
+      "role": "第二轮隔离题库（出题方与系统完全隔离、从未参与调参），本仓库唯一无调参嫌疑的盲写数字",
+      "gold": "gold/gold_blind_v8.jsonl",
+      "qbank": "gold/qbank_blind_v8.jsonl",
+      "testable": "95/100（5 题所引法律正文不在 v6 语料：商标法/价格法/道路交通安全法/职工带薪年休假条例/预防未成年人犯罪法）",
+      "recall_at_5": 0.6421,
+      "recall_at_5_display": "64.2%",
+      "recall_at_10_display": "70.5%",
+      "recall_at_20_display": "83.2%",
+      "recall_at_30_display": "87.4%",
+      "mrr_at_5": 0.46,
+      "hits": "61/95",
+      "count_unmapped_as_miss": "61.0%（61/100）",
+      "lexical_hybrid_baseline": {"recall_at_5_display": "28.4%", "hits": "27/95", "mrr_at_5": 0.189},
+      "paraphrase_audit": {
+        "第一轮题面与目标条文重合≥8字": "32/100（中位 6 字、最长 24 字）",
+        "第二轮题面与目标条文重合≥8字": "0/95（中位 2 字、最长 5 字）",
+        "第一轮按同尺分档 v7 R@5": "≥8字 96.9%（31/32）、4-7字 94.6%、≤3字 77.4%（24/31）",
+        "第二轮按同尺分档 v7 R@5": "4-7字 100%（15/15）、≤3字 57.5%（46/80）"
+      },
+      "gold_fix": "2 处（反不正当竞争法 2025 修订版编号：商业秘密 第九条→第十条、虚假宣传 第八条→第九条；题面未改，审计字段在 qbank）"
+    },
     "synth177": {
       "recall_at_5": 0.9944,
       "recall_at_5_display": "99.4%",
       "mrr_at_5": 0.994
     },
     "targets": {
-      "blind_ge_90": true,
-      "real_ge_70": true
-    }
+      "blind_first_round_ge_90": true,
+      "blind_second_round_holdout_ge_90": false,
+      "real_ge_70": true,
+      "note": "第一轮 90% 之所以达标含两层污染（题面近乎照抄 32/100 + w_cross 在该集上选）；留出复核为 v7 R@5 64.2%（61/95），未达 90% 线。"
+    },
+    "maintained_by": "本节由语义线手工维护（scripts/eval_semantic_rerank.py 的结果 JSON 誊写）。gen_eval_report.py 重跑只重建 real/synth 各节，会丢掉本节——重跑后请按 docs/retrieval-v7-semantic.md §4b/§7 回填；复现命令在该文档 §7。"
   }
 }
