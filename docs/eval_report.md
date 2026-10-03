@@ -2,9 +2,9 @@
 
 > **本文件由 `scripts/gen_eval_report.py` 生成（需维护者本地语料），勿手改；**
 > 数字单一来源是 [docs/metrics.json](metrics.json)，CI 校验两份 README 与之一致。
-> **当前口径语料：25,626 条**（v6：整合版刑法 + 补 7 部缺法；扩展通道权重重标定 2.5→1.5）
-> 生成于 2026-10-03 11:47，commit `1d74998`。
-> 复现：`python scripts/gen_eval_report.py --corpus data/corpus_v6.jsonl --corpus-label v6 --history data/gold_synth_v5_seed20260918.jsonl --history data/gold_synth_v4_seed20260918.jsonl --history data/gold_synth_seed20260918.jsonl --history data/gold_synth_seed20260918.jsonl --history data/gold_synth_seed20260918.jsonl --scope-note "（v6：整合版刑法 + 补 7 部缺法；扩展通道权重重标定 2.5→1.5）"`
+> **当前口径语料：25,987 条**（v7：在 v6 基础上**纯追加**第二轮隔离题库量出的 6 部缺法共 361 条——商标法/价格法/道路交通安全法/职工带薪年休假条例/预防未成年人犯罪法/反家庭暴力法。词法数字在 v6 与 v7 上**逐位相同**（已逐位核对），故只同步语料条数、未重跑本脚本；语料补齐的来龙去脉见 [docs/retrieval-v8-optimization.md](retrieval-v8-optimization.md) §1）
+> 生成于 2026-10-03 11:47，commit `1d74998`（v6 口径生成）。
+> 复现：`python scripts/gen_eval_report.py --corpus data/corpus_v7.jsonl --corpus-label v7 --scope-note "（v7：补入 6 部缺法，25,987 条 / 444 部；词法数字与 v6 逐位相同）"`（历代并列节的 `--history` 依赖当时本地的 gold 副本，已不在仓库内，重跑时省略该参数）。
 ## 合成金标（seed=20260918，「全库唯一短语 → 关键词查询」）
 
 | 检索器 | Recall@5 | MRR |
