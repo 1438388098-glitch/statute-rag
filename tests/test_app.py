@@ -146,5 +146,79 @@ class AppServerTest(unittest.TestCase):
         self.assertEqual(data["articles"], [])
 
 
+class _DeepServerMixin(object):
+    @classmethod
+    def _start(cls, state):
+        cls.state = state
+        cls.server = make_server(cls.state, "127.0.0.1", 0)
+        cls.port = cls.server.server_address[1]
+        cls.thread = threading.Thread(target=cls.server.serve_forever)
+        cls.thread.daemon = True
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join(timeout=5)
+
+
+class DeepModeUnconfiguredTest(_DeepServerMixin, unittest.TestCase):
+    """未配置 LLM key 时 deep=1 必须优雅降级：正常返回结果并说明未启用。"""
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(DEMO_CORPUS):
+            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        cls._start(build_state(DEMO_CORPUS))
+
+    def test_meta_reports_llm_unavailable(self):
+        _status, body = _get(self.port, "/api/meta")
+        data = json.loads(body)
+        self.assertFalse(data["llm_rerank"]["available"])
+        self.assertIsNone(data["llm_rerank"]["model"])
+
+    def test_deep_degrades_with_reason(self):
+        status, body = _get(self.port, "/api/search?q=%E6%BC%94%E7%A4%BA&k=3&deep=1")
+        self.assertEqual(status, 200)
+        data = json.loads(body)
+        self.assertFalse(data["deep_rerank"]["applied"])
+        self.assertIn("reason", data["deep_rerank"])
+        self.assertEqual(len(data["results"]), 3)
+
+
+class DeepModeWithStubTest(_DeepServerMixin, unittest.TestCase):
+    """注入桩重排器：deep=1 走重排、响应带模型名、召回池加深到 top_n。"""
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(DEMO_CORPUS):
+            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+
+        class StubReranker(object):
+            top_n = 50
+            model = "stub-model"
+
+            def rerank(self, query, citations, k):
+                return list(reversed(citations))[:k]
+
+        cls._start(build_state(DEMO_CORPUS, llm_reranker=StubReranker()))
+
+    def test_meta_reports_llm_available(self):
+        _status, body = _get(self.port, "/api/meta")
+        data = json.loads(body)
+        self.assertTrue(data["llm_rerank"]["available"])
+        self.assertEqual(data["llm_rerank"]["model"], "stub-model")
+
+    def test_deep_applies_reranker_and_deepens_recall(self):
+        _status, plain = _get(self.port, "/api/search?q=%E6%BC%94%E7%A4%BA&k=3")
+        _status, deep = _get(self.port, "/api/search?q=%E6%BC%94%E7%A4%BA&k=3&deep=1")
+        data = json.loads(deep)
+        self.assertTrue(data["deep_rerank"]["applied"])
+        self.assertEqual(data["deep_rerank"]["model"], "stub-model")
+        self.assertEqual(data["depth"], 50)  # max(默认融合深度, top_n)
+        self.assertEqual(len(data["results"]), 3)
+
+
 if __name__ == "__main__":
     unittest.main()

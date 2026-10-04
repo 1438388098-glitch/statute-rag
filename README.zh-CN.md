@@ -74,7 +74,8 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 > **口径纪律（重要）**：前两行是 v7 的**调参所用**样本——语义与交叉编码器的融合权重
 > w_cross 就是在第一轮盲写题上选的。第三行是**留出样本**：两轮题库由不同出题方在互不
 > 知情、且完全看不到本系统（语料/检索代码/旧题库/金标/文档）的环境下分别写成，第二轮
-> 从未参与任何调参。**本仓库唯一无调参嫌疑的盲写数字是 66.0%（66/100，语料 v7）。**
+> 从未参与任何调参。**无调参嫌疑的盲写数字：66.0%（66/100，语料 v7，纯本地管线）；
+> 接 LLM 重排可选层后同一金标为 92.0%（见下节）。**
 > 两轮不可混读：第一轮题面有 32/100 与目标条文重合 ≥8 字（中位 6 字、最长 24 字，近乎
 > 照抄），第二轮 0/100（中位 2 字、最长 5 字，全部自然语言转述）——按同一把尺子分档，
 > 第一轮「真转述」那 31 题 v7 命中 77.4%，第二轮「真转述」得分见该文档 §7。
@@ -85,7 +86,8 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 > **为冲击留出 90% 的系统优化已做过一轮**：15 个算法变体（交叉深度/权重、只升不降、
 > 名次取优融合、语义优先、聚合方式、并池深度、查询变体、模型组合、更大交叉模型与向量
 > 模型）**全部无增益或有害**，诊断显示瓶颈是排序器对「语义近邻 vs 真正答案」的判别力
-> （95 题里 91 题的正确答案已在召回池内）→ **90% 未达成**，全记录与剩余三条路见
+> （95 题里 91 题的正确答案已在召回池内）——本地算法路径止步于此，**90% 最终由 LLM
+> 重排可选层达成**（见下节），全记录见
 > [docs/retrieval-v8-optimization.md](docs/retrieval-v8-optimization.md)。第一轮 90% 的
 > 两层污染量化、两轮分档对照与逐题失败清单见 [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md) §7。
 > **交叉层的账**：交叉重排对写出来的题净赚（p31 +6.4pt、p68 +5.9pt、v8 +7 题），对真实
@@ -97,6 +99,24 @@ top-50 并入召回池 → 加权 RRF 融合 → 交叉编码器（bge-reranker-
 **名次 RRF 混合**（不是替换，替换式会伤真实题 4 题）→ LIKE 精确命中时整层跳过
 （保合成金标）。全部消融、被否决的路线（四通道扁平融合、余弦原始分、静态词向量表、
 放大模型）与「w_cross 在盲写集上选」的超参披露见 [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md)。
+
+### LLM 重排层（可选，2026-10-04）
+
+在语义重排之后，再把管线前 50 名候选交给大模型 listwise 挑 5 条提前——只重排、不发明
+条目，API 失败自动降级，默认关闭（需显式配置 API key）：
+
+| v8 留出盲写题 100 题 | R@5 | R@1 | 说明 |
+|---|---|---|---|
+| 本地管线（词法+语义+交叉编码器） | 66.0%（66/100） | 33.0% | 上表第三行 |
+| + longcat-2.5-preview-free（免费档） | **92.0%（92/100）** | 82.0% | 打满 top50 天花板 |
+| + deepseek-v4.1-flash（OpenCode 套餐内） | **92.0%（92/100）** | 85.0% | 与付费平台版逐题一致 |
+| + deepseek-flash（平台付费参照） | 92.0%（top50）/ 93.0%（top100） | 85.0% | top100 多救 1 题 |
+
+配置选择只在调参集（p31/real38）上做，v8 每配置只测一次；temperature 0 单次测量有
+±2 题噪声，不逐位可复现（注明模型与日期）。92% 是候选深度天花板：8 道金标不在前 50
+（7 道不在前 100），全为抽象规则的口语转述，属**召回缺口**而非排序缺口——重排层对
+送进来的候选零损耗（26 救回 / 0 挤掉）。机制、配置环境变量、诚实声明与复现命令见
+[docs/retrieval-llm-rerank.md](docs/retrieval-llm-rerank.md)。
 
 依赖与降级：语义层需 `numpy + transformers + torch`（CPU 即可）+ 离线预算的条文向量；
 不装/不传时检索行为与上表基线**逐位一致**，核心保持零第三方依赖。接线与复现命令见该文档 §5。
@@ -162,7 +182,7 @@ statute_rag/          核心包（纯标准库）
 scripts/              CLI 与 Web 服务：run_eval、search_cli、app（Web 界面）、bench、
                       gen_eval_report、check_doc_numbers、make_demo_corpus、ablate_retrieval 等
 app/index.html        Web 界面单页（无构建、无外链、断网可用）
-tests/                201 例单测（unittest，临时目录自造语料）
+tests/                218 例单测（unittest，临时目录自造语料）
 gold/                 入库金标 + 人工复核状态
 docs/                 生成的评测报告、metrics.json、实验记录
 ```
@@ -208,7 +228,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 
 3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
 
-- 单元测试 201 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
+- 单元测试 218 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
 
 ```bash
 # 30 秒检索演示（需语料）

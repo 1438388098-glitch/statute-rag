@@ -146,10 +146,66 @@
     },
     "targets": {
       "blind_first_round_ge_90": true,
-      "blind_second_round_holdout_ge_90": false,
+      "blind_second_round_holdout_ge_90": true,
       "real_ge_70": true,
-      "note": "第一轮 90% 之所以达标含两层污染（题面近乎照抄 32/100 + w_cross 在该集上选）；留出复核为 v7 R@5 64.2%（61/95），未达 90% 线。"
+      "note": "第一轮 90% 之所以达标含两层污染（题面近乎照抄 32/100 + w_cross 在该集上选），留出复核为 66.0%（v7 语料），本地管线未达线；2026-10-04 LLM 重排可选层上线后 v8 留出 92.0%（longcat-2.5-preview-free / deepseek-v4.1-flash），达成；无 LLM 层的本地管线仍是 66.0%，两种口径分开陈述。"
     },
     "maintained_by": "本节由语义线手工维护（scripts/eval_semantic_rerank.py 的结果 JSON 誊写）。gen_eval_report.py 重跑只重建 real/synth 各节，会丢掉本节——重跑后请按 docs/retrieval-v7-semantic.md §4b/§7 回填；复现命令在该文档 §7。"
+  },
+  "llm_rerank": {
+    "note": "LLM 重排可选层（statute_rag/llm_rerank.py）：运行时完整管线（词法三通道→语义并池+交叉编码器）的前 50 名候选 → 大模型 listwise 挑出至多 5 条按相关性提前。只重排不发明条目；API 失败/超时/解析失败一律原序降级。默认关闭（构造需显式 API key，经环境变量配置）。调参只发生在调参集（p31/real38），v8 留出题每配置只测一次；temperature 0 的单次测量有 ±2 题噪声，数字不逐位可复现（须注明模型与日期）。机制、逐题明细与 8 道 top50 外漏题清单见 docs/retrieval-llm-rerank.md。",
+    "config": {
+      "candidates_top_n": 50,
+      "pick": 5,
+      "temperature": 0,
+      "thinking": "disabled（space-bunny-free 只认 reasoning_effort=low，实际零思考输出）",
+      "max_tokens": "不设（思考模型设上限会被 reasoning 烧穿、正文截断）",
+      "insert_point": "词法三通道 → 语义并池+交叉编码器 → LLM 重排（管线原样保留）"
+    },
+    "date": "2026-10-04",
+    "blind_v8_holdout": {
+      "baseline_recall_at_5": 0.66,
+      "baseline_display": "66.0%",
+      "ceiling": "top50=92%、top100=93%、R@30=89%（离线算得）——92.0% 已打满 top50 天花板",
+      "certified": {
+        "longcat-2.5-preview-free": {
+          "recall_at_5": 0.92,
+          "recall_at_5_display": "92.0%",
+          "hits": "92/100",
+          "recall_at_1_display": "82.0%",
+          "cost": "免费（OpenCode 限时免费档，无限量）",
+          "latency_p50_s": 3.9
+        },
+        "deepseek-v4.1-flash": {
+          "recall_at_5": 0.92,
+          "recall_at_5_display": "92.0%",
+          "hits": "92/100",
+          "recall_at_1_display": "85.0%",
+          "cost": "OpenCode Go 套餐内（本轮评测耗滚动窗口 1%）",
+          "latency_p50_s": 2.8
+        },
+        "space-bunny-free": {
+          "recall_at_5": 0.91,
+          "recall_at_5_display": "91.0%",
+          "hits": "91/100",
+          "recall_at_1_display": "82.0%",
+          "cost": "免费（OpenCode 限时免费档）",
+          "latency_p50_s": 3.0
+        },
+        "deepseek-flash_paid_reference": {
+          "recall_at_5": 0.92,
+          "recall_at_5_display": "92.0%（top50）/ 93.0%（top100）",
+          "hits": "92/100",
+          "recall_at_1_display": "85.0%",
+          "cost": "≈0.9 分/次（top50，高峰价）",
+          "latency_p50_s": 0.7
+        }
+      },
+      "beyond_top50": "8 题金标不在前 50（7 题不在前 100、1 题第 57），全为抽象规则的口语转述：非法吸收公众存款（刑法176）、缓刑条件（刑法72）、侵权管辖（民诉29）、诉前保全（民诉104）、行诉受案范围（行诉12）、不执行拘留（治安23）、人民调解自愿原则（调解法3）、侵犯商业秘密（反不正当竞争10）——属召回层缺口，重排不可达，改进方向是章节标题进索引等召回手段",
+      "tuning_sets": {
+        "p31": "74.2% → 83.9%（26/31，三模型一致）",
+        "real38": "71.1% → 89.5%（deepseek-v4.1-flash，与付费平台版逐题一致）/ 86.8%（longcat）/ 84.2%（space-bunny）"
+      }
+    }
   }
 }

@@ -61,7 +61,8 @@ MAX_QUERY_CHARS = 200
 class AppState(object):
     """一次性建好的运行态：语料统计 + 检索器 + 元信息。"""
 
-    def __init__(self, corpus, corpus_path, retriever, depth, k, build_seconds, synonyms):
+    def __init__(self, corpus, corpus_path, retriever, depth, k, build_seconds, synonyms,
+                 llm_reranker=None):
         self.corpus = corpus
         self.corpus_path = corpus_path
         self.retriever = retriever
@@ -69,6 +70,7 @@ class AppState(object):
         self.k = k
         self.build_seconds = build_seconds
         self.synonyms = synonyms
+        self.llm_reranker = llm_reranker
         self._law_index = self._build_law_index()
 
     def _build_law_index(self):
@@ -108,10 +110,14 @@ class AppState(object):
             "max_k": MAX_K,
             "query_max_chars": MAX_QUERY_CHARS,
             "synonym_entries": len(self.synonyms or {}),
+            "llm_rerank": {
+                "available": self.llm_reranker is not None,
+                "model": self.llm_reranker.model if self.llm_reranker is not None else None,
+            },
             "build_seconds": round(self.build_seconds, 1),
         }
 
-    def search(self, query, k):
+    def search(self, query, k, deep=False):
         q = " ".join((query or "").split())
         if not q:
             raise ValueError("查询为空")
@@ -119,7 +125,18 @@ class AppState(object):
         if truncated:
             q = q[:MAX_QUERY_CHARS]
         started = time.time()
-        ranking, trace = self.retriever.recall_with_trace(q, self.depth)
+        depth = self.depth
+        deep_info = None
+        if deep and self.llm_reranker is not None:
+            # 深度模式：召回池加深到 LLM 候选深度，重排后再截断（docs/retrieval-llm-rerank.md）
+            depth = max(self.depth, self.llm_reranker.top_n)
+        ranking, trace = self.retriever.recall_with_trace(q, depth)
+        if deep:
+            if self.llm_reranker is not None:
+                ranking = self.llm_reranker.rerank(q, ranking, len(ranking))
+                deep_info = {"applied": True, "model": self.llm_reranker.model}
+            else:
+                deep_info = {"applied": False, "reason": "服务端未配置 LLM 重排（STATUTE_RAG_LLM_KEY）"}
         took_ms = (time.time() - started) * 1000.0
         results = []
         for rank, cite in enumerate(ranking[:k], 1):
@@ -140,14 +157,15 @@ class AppState(object):
             # 候选池 = 各路各取前 depth 名后求并集的大小，不是「全库命中条数」
             # （词法检索里后者无意义：单字 gram 能命中半个库）。界面按此说法呈现。
             "candidates": len(ranking),
-            "depth": self.depth,
+            "depth": depth,
+            "deep_rerank": deep_info,
             "took_ms": round(took_ms, 1),
             "k": k,
             "results": results,
         }
 
 
-def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K):
+def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K, llm_reranker=None):
     """读语料并建索引。语料条数与部数直接取自语料本身，不写死。"""
     corpus = load_corpus(corpus_path)
     if not corpus:
@@ -158,7 +176,16 @@ def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K):
     started = time.time()
     retriever = HybridRetriever(corpus)
     build_seconds = time.time() - started
-    return AppState(corpus, corpus_path, retriever, depth, k, build_seconds, load_synonyms())
+    if llm_reranker is None:
+        # LLM 重排可选层：默认关闭；配置了 STATUTE_RAG_LLM_KEY 才启用（失败如实降级）
+        from statute_rag import llm_rerank
+        if llm_rerank.enabled():
+            try:
+                llm_reranker = llm_rerank.LLMReranker()
+            except Exception as exc:  # 配置了 key 但构造失败：不拦检索，stderr 留痕
+                print("LLM 重排启用失败（深度模式不可用）：%r" % exc, file=sys.stderr)
+    return AppState(corpus, corpus_path, retriever, depth, k, build_seconds, load_synonyms(),
+                    llm_reranker=llm_reranker)
 
 
 def make_handler(state):
@@ -219,8 +246,9 @@ def make_handler(state):
                 except (TypeError, ValueError):
                     k = state.k
                 k = max(1, min(MAX_K, k))
+                deep = (params.get("deep") or ["0"])[0] in ("1", "true")
                 try:
-                    self._send_json(state.search(query, k))
+                    self._send_json(state.search(query, k, deep=deep))
                 except ValueError as exc:
                     self._send_json({"error": str(exc)}, 400)
                 return

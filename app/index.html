@@ -69,6 +69,14 @@
 
   /* 搜索区 */
   .search-row { display: flex; gap: 0; align-items: stretch; }
+  .deep-toggle {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-size: 0.92rem; color: var(--text); background: var(--surface);
+    border: 1.5px solid var(--border-strong); border-left: none; border-right: none;
+    padding: 0 0.85rem; cursor: pointer; white-space: nowrap; user-select: none;
+  }
+  .deep-toggle input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+  @media (max-width: 640px) { .deep-toggle { border-right: none; } }
   #q {
     flex: 1; min-width: 0;
     font-family: var(--font-display); font-size: 1.12rem; font-weight: 500;
@@ -232,6 +240,9 @@
   <form class="search-row" id="form" role="search" autocomplete="off">
     <input id="q" type="search" name="q" placeholder="用大白话问，比如：公司拖欠工资多久算违法"
            aria-label="检索问题" spellcheck="false">
+    <label class="deep-toggle" title="开启后把候选条文交给大模型重排一遍，更准但慢约 1-4 秒；需要服务端配置">
+      <input id="deep" type="checkbox">深度精排
+    </label>
     <button id="go" type="submit">检索</button>
   </form>
   <ul class="samples" id="samples"></ul>
@@ -277,6 +288,7 @@
     form: document.getElementById("form"),
     q: document.getElementById("q"),
     go: document.getElementById("go"),
+    deep: document.getElementById("deep"),
     out: document.getElementById("out"),
     badge: document.getElementById("badge"),
     samples: document.getElementById("samples"),
@@ -644,7 +656,8 @@
 
   function fillMeta() {
     fetch("/api/meta").then(function (r) { return r.json(); }).then(function (m) {
-      el.badge.textContent = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
+      state.metaBadge = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
+      el.badge.textContent = state.metaBadge;
     }).catch(function () {
       el.badge.textContent = "元信息不可用";
     });
@@ -660,11 +673,19 @@
     el.go.disabled = true;
     renderLoading();
     var url = "/api/search?q=" + encodeURIComponent(q) + "&k=" + state.k;
+    if (el.deep && el.deep.checked) { url += "&deep=1"; }
     fetch(url, ctl ? { signal: ctl.signal } : undefined).then(function (r) {
       return r.json().then(function (body) { return { ok: r.ok, body: body }; });
     }).then(function (res) {
-      if (res.ok) { renderResults(res.body); }
-      else { renderError(res.body && res.body.error ? res.body.error : "服务返回了错误"); }
+      if (res.ok) {
+        renderResults(res.body);
+        var dr = res.body.deep_rerank;
+        if (dr && dr.applied) {
+          el.badge.textContent = "已深度精排（" + dr.model + "）";
+        } else if (dr && !dr.applied && state.metaBadge) {
+          el.badge.textContent = state.metaBadge + " · 深度精排未启用（服务端未配置）";
+        }
+      } else { renderError(res.body && res.body.error ? res.body.error : "服务返回了错误"); }
     }).catch(function (err) {
       if (err && err.name === "AbortError") { return; }
       renderError("连不上本地服务（" + (err && err.message ? err.message : "网络错误") + "）");

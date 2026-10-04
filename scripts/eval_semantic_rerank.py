@@ -67,6 +67,9 @@ def main():
                     help="小模型条文向量（补法版本用 ctx_doc_cache_v7.npz）")
     ap.add_argument("--emb-base", default=os.path.join(TMP, "ctx_doc_cache_base.npz"),
                     help="大模型条文向量（补法版本用 ctx_doc_cache_base_v7.npz）")
+    ap.add_argument("--llm", action="store_true",
+                    help="在管线之上叠加 LLM 重排可选层（LLMRerankRetriever，默认前 50 名候选；"
+                         "需 STATUTE_RAG_LLM_KEY 等环境变量，见 statute_rag/llm_rerank.py）")
     ap.add_argument("--tag", default="v7")
     args = ap.parse_args()
     t0 = time.time()
@@ -95,6 +98,13 @@ def main():
         corpus, [p for p, _ in emb_specs], [d for _, d in emb_specs],
         pool=pool, cross_model_dir=None if args.no_cross else args.cross)
     hyb = HybridRetriever(corpus, reranker=reranker, pool_extra=pool)
+    llm_note = None
+    if args.llm:
+        from statute_rag.llm_rerank import LLMReranker, LLMRerankRetriever
+        llm = LLMReranker()
+        hyb = LLMRerankRetriever(hyb, llm)
+        llm_note = "%s top%d" % (llm._model, llm._top_n)
+        print("LLM 重排已启用：%s" % llm_note, flush=True)
 
     results = {}
     gold_cache = {}
@@ -126,6 +136,7 @@ def main():
     out = {"w_sem": sr.W_SEM, "w_cross": sr.W_CROSS,
            "union_k": args.union_k,
            "cross": None if args.no_cross else os.path.basename(args.cross),
+           "llm": llm_note,
            "elapsed_s": round(time.time() - t0, 1), "results": results}
     out_path = os.path.join(TMP, "eval_%s.json" % args.tag)
     with open(out_path, "w", encoding="utf-8") as f:
