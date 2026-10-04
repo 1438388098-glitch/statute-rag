@@ -65,7 +65,7 @@ Three rules hold this together:
 |---|---|---|---|
 | Real-question 38 (used to tune v7) | 52.6% | 71.1% (27/38) | 97.4% |
 | Blind bank, round 1, 100 q (used to tune v7) | 70.0% | 90.0% (90/100) | 95.0% |
-| **Blind bank, round 2, 100 q (held out — never tuned on)** | **31.0%** | **66.0% (66/100)** | 89.0% |
+| **Blind bank, round 2, 100 q (held out — never tuned on)** | **33.0%** | **66.0% (66/100)** | 89.0% |
 | Synthetic 177 | 100.0% | 99.4% | 99.4% |
 
 > Round 2 was written under hard isolation: four independent authors, unaware of each other and forbidden from reading anything in this repo or the user's home directory, each writing 25 questions as natural-language paraphrases (no reuse of 4+-character runs from article text). Audit: round-1 questions share ≥8 consecutive characters with their target article in **32/100** cases (median 6, max 24 — near-verbatim); round 2: **0/100** (median 2, max 5). On the same measuring stick the lexical baseline scores 96.9% on round-1's near-verbatim questions but only 29.0% on its genuine paraphrases; under v7 the same split is 96.9% vs 77.4%. **Blind numbers free of tuning contamination: 66.0% (66/100, corpus v7, pure local pipeline) and 92.0% with the optional LLM reranking layer (below).** The 5 questions whose cited laws were missing from the v6 corpus drove a pure-append corpus fill (6 laws / 361 articles → corpus v7 = 25,987 / 444), so round 2 now scores on all 100; on the v6 corpus it was 64.2% (61/95) and 61.0% if the unmapped five count as misses. Two gold entries were corrected post-audit for a version mismatch (anti-unfair-competition law: the corpus holds the 2025 revision), with audit fields retained in the qbank. Two-round comparison and the per-question failure list: [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md) §7.
@@ -124,7 +124,7 @@ legal.db ──importer──> corpus JSONL (three-layer quality gate)
    │                   (zero-dependency, no tokenizer)
    └── HybridRetriever multi-channel RRF: original-query BM25
                        + synonym-expanded-query BM25 (synonyms.json,
-                         127 colloquial↔statutory entries + numeral
+                         367 colloquial↔statutory entries + numeral
                          normalization, via query_expansion.py)
                        + LIKE (original query)
               ▼

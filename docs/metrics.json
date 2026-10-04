@@ -1,9 +1,8 @@
 {
   "generated": {
-    "commit": "1d74998",
+    "commit": "4e78d8b",
     "corpus_size": 25987,
-    "date": "2026-10-03 11:47",
-    "note": "corpus_size 已按 v7 语料（25,987 = v6 的 25,626 + 补入 6 部缺法的 361 条）更新；synth/real 各节的词法数字在 v6 与 v7 上逐位相同（已逐位核对），故未重跑 gen_eval_report.py，只改语料条数——见 docs/retrieval-v8-optimization.md §1"
+    "date": "2026-10-04 20:48"
   },
   "real": {
     "bm25": {
@@ -46,6 +45,102 @@
     "miss": 2
   },
   "recall_at_5_note": "噪声限定：真实 R@5 的最后 2.6pt（扩展通道权重 w 2.0→2.5）只等于 1 道题的名次交换，落在 38 题的量化噪声内（1 题 = 2.6pt）；跨权重稳定、三版语料一致的硬结论是 R@30（v3 73.7%→81.6%）。",
+  "semantic_v7": {
+    "blind100": {
+      "hits": "89/100",
+      "mrr_at_5": 0.787,
+      "recall_at_10_display": "90.0%",
+      "recall_at_30_display": "95.0%",
+      "recall_at_5": 0.89,
+      "recall_at_5_display": "89.0%",
+      "role": "第一轮隔离题库，v7 调参所用（w_cross 在本集上选），不是留出数字；词典 v2 重测后 89.0%（2026-10-04，-1 题如实记录）"
+    },
+    "blind_v8_holdout": {
+      "current_corpus_v7_100_testable": {
+        "hits": "66/100",
+        "lexical_hybrid_baseline": {
+          "hits": "33/100",
+          "mrr_at_5": 0.208,
+          "recall_at_5_display": "33.0%"
+        },
+        "mrr_at_5": 0.455,
+        "recall_at_10_display": "72.0%",
+        "recall_at_20_display": "85.0%",
+        "recall_at_30_display": "89.0%",
+        "recall_at_5": 0.66,
+        "recall_at_5_display": "66.0%",
+        "testable": "100/100（语料 v7 补入 6 部缺法：商标法/价格法/道路交通安全法/职工带薪年休假条例/预防未成年人犯罪法/反家庭暴力法）"
+      },
+      "gold": "gold/gold_blind_v8_v7.jsonl",
+      "gold_fix": "2 处（反不正当竞争法 2025 修订版编号：商业秘密 第九条→第十条、虚假宣传 第八条→第九条；题面未改，审计字段在 qbank）",
+      "gold_v6_corpus": "gold/gold_blind_v8.jsonl（v6 语料口径，95 题可测）",
+      "optimization_round": {
+        "cross_layer_tradeoff": "交叉重排对写出来的题净赚（p31 +6.4pt、p68 +5.9pt、v8 +7 题），对真实口语问句净亏（real38 71.1% → 关掉交叉 81.6%）；保留交叉层是因为目标口径是盲写题",
+        "diagnosis": "95 题里 91 题的正确答案已在召回池内；34 道未进前五的题里 29 道的正确答案在语义前 30 名 → 瓶颈是排序器对「语义近邻 vs 真正答案」的判别力（CPU 小模型边界），不是召回",
+        "doc": "docs/retrieval-v8-optimization.md",
+        "not_available": "更大/法律领域模型（无 GPU：bge-large 与 m3e 编码全语料 2–3.4 小时、bge-reranker-large 37 秒/查询）；章节标题进索引（需重编码全部条文）；LLM 问句改写（本机无 ollama/无 GPU/无 API key）",
+        "outcome": "全部无增益或有害——现行配置在调参集（p31/p68/real38）上已到局部最优；90% 目标未达成",
+        "variants_tested": 15
+      },
+      "paraphrase_audit": {
+        "第一轮按同尺分档 v7 R@5": "≥8字 96.9%（31/32）、4-7字 94.6%、≤3字 77.4%（24/31）",
+        "第一轮题面与目标条文重合≥8字": "32/100（中位 6 字、最长 24 字）",
+        "第二轮按同尺分档 v7 R@5": "4-7字 100%（15/15）、≤3字 57.5%（46/80）",
+        "第二轮题面与目标条文重合≥8字": "0/100（中位 2 字、最长 5 字）"
+      },
+      "qbank": "gold/qbank_blind_v8.jsonl",
+      "role": "第二轮隔离题库（出题方与系统完全隔离、从未参与调参），本仓库唯一无调参嫌疑的盲写数字",
+      "v6_corpus_95_testable": {
+        "count_unmapped_as_miss": "61.0%（61/100）",
+        "hits": "61/95",
+        "lexical_hybrid_baseline": {
+          "hits": "27/95",
+          "mrr_at_5": 0.189,
+          "recall_at_5_display": "28.4%"
+        },
+        "mrr_at_5": 0.46,
+        "recall_at_10_display": "70.5%",
+        "recall_at_20_display": "83.2%",
+        "recall_at_30_display": "87.4%",
+        "recall_at_5": 0.6421,
+        "recall_at_5_display": "64.2%",
+        "testable": "95/100（5 题所引法律正文不在 v6 语料）"
+      }
+    },
+    "config": {
+      "cross_model": "bge-reranker-base",
+      "cross_top_n": 10,
+      "embeddings": [
+        "bge-small-zh-v1.5",
+        "bge-base-zh-v1.5"
+      ],
+      "gate": "like-hit 时跳过并池与重排",
+      "union_pool_k": 50,
+      "w_cross": 3.0,
+      "w_sem": 2.0
+    },
+    "maintained_by": "本节由语义线手工维护（scripts/eval_semantic_rerank.py 的结果 JSON 誊写）。gen_eval_report.py 重跑只重建 real/synth 各节，会丢掉本节——重跑后请按 docs/retrieval-v7-semantic.md §4b/§7 回填；复现命令在该文档 §7。",
+    "note": "语义重排 v7（多模型集成名次 + 并池 + 交叉 RRF 混合 + gateA）。上面 real/blind/synth 各节的数字是词法 hybrid 基线（reranker=None），两者口径不同、不可混用；机制与消融见 docs/retrieval-v7-semantic.md。旧口径的 90.0% 是第一轮盲写集的调参内数字，既含 w_cross 调参、题面又有 32/100 近乎照抄条文，**留出数字以 blind_v8_holdout 为准（v7 语料 66.0%）**；为冲击留出 90% 的一轮系统优化见 docs/retrieval-v8-optimization.md（15 个变体全部无增益）。2026-10-04 同义词典 v2（127→367 词条，全部 value 过语料命中校验）后全链路重测：词法盲写基线 31.0%→33.0%（真实 52.6%、合成 100.0% 持平），语义层 real38 71.1% / 留出 66.0% / 合成 99.4% 全部持平（第一轮调参集 90.0%→89.0%，-1 题如实记录），LLM 精排层留出 92.0%（92/100）持平。",
+    "real38": {
+      "hits": "27/38",
+      "mrr_at_5": 0.501,
+      "recall_at_10_display": "86.8%",
+      "recall_at_30_display": "97.4%",
+      "recall_at_5": 0.7105,
+      "recall_at_5_display": "71.1%"
+    },
+    "synth177": {
+      "mrr_at_5": 0.994,
+      "recall_at_5": 0.9944,
+      "recall_at_5_display": "99.4%"
+    },
+    "targets": {
+      "blind_first_round_ge_90": true,
+      "blind_second_round_holdout_ge_90": true,
+      "note": "第一轮 90% 之所以达标含两层污染（题面近乎照抄 32/100 + w_cross 在该集上选），留出复核为 66.0%（v7 语料），本地管线未达线；2026-10-04 LLM 重排可选层上线后 v8 留出 92.0%（longcat-2.5-preview-free / deepseek-v4.1-flash），达成；无 LLM 层的本地管线仍是 66.0%，两种口径分开陈述。",
+      "real_ge_70": true
+    }
+  },
   "synth": {
     "bm25": {
       "mrr": 0.954,
@@ -66,146 +161,5 @@
       "recall_at_5_display": "96.6%"
     },
     "n": 177
-  },
-  "semantic_v7": {
-    "note": "语义重排 v7（多模型集成名次 + 并池 + 交叉 RRF 混合 + gateA）。上面 real/blind/synth 各节的数字是词法 hybrid 基线（reranker=None），两者口径不同、不可混用；机制与消融见 docs/retrieval-v7-semantic.md。旧口径的 90.0% 是第一轮盲写集的调参内数字，既含 w_cross 调参、题面又有 32/100 近乎照抄条文，**留出数字以 blind_v8_holdout 为准（v7 语料 66.0%）**；为冲击留出 90% 的一轮系统优化见 docs/retrieval-v8-optimization.md（15 个变体全部无增益）。",
-    "config": {
-      "embeddings": ["bge-small-zh-v1.5", "bge-base-zh-v1.5"],
-      "union_pool_k": 50,
-      "w_sem": 2.0,
-      "cross_model": "bge-reranker-base",
-      "cross_top_n": 10,
-      "w_cross": 3.0,
-      "gate": "like-hit 时跳过并池与重排"
-    },
-    "real38": {
-      "recall_at_5": 0.7105,
-      "recall_at_5_display": "71.1%",
-      "recall_at_10_display": "86.8%",
-      "recall_at_30_display": "97.4%",
-      "mrr_at_5": 0.501,
-      "hits": "27/38"
-    },
-    "blind100": {
-      "role": "第一轮隔离题库，v7 调参所用（w_cross 在本集上选），不是留出数字",
-      "recall_at_5": 0.9,
-      "recall_at_5_display": "90.0%",
-      "recall_at_10_display": "90.0%",
-      "recall_at_30_display": "95.0%",
-      "mrr_at_5": 0.784,
-      "hits": "90/100"
-    },
-    "blind_v8_holdout": {
-      "role": "第二轮隔离题库（出题方与系统完全隔离、从未参与调参），本仓库唯一无调参嫌疑的盲写数字",
-      "gold": "gold/gold_blind_v8_v7.jsonl",
-      "gold_v6_corpus": "gold/gold_blind_v8.jsonl（v6 语料口径，95 题可测）",
-      "qbank": "gold/qbank_blind_v8.jsonl",
-      "current_corpus_v7_100_testable": {
-        "testable": "100/100（语料 v7 补入 6 部缺法：商标法/价格法/道路交通安全法/职工带薪年休假条例/预防未成年人犯罪法/反家庭暴力法）",
-        "recall_at_5": 0.66,
-        "recall_at_5_display": "66.0%",
-        "recall_at_10_display": "72.0%",
-        "recall_at_20_display": "86.0%",
-        "recall_at_30_display": "89.0%",
-        "mrr_at_5": 0.46,
-        "hits": "66/100",
-        "lexical_hybrid_baseline": {"recall_at_5_display": "31.0%", "hits": "31/100", "mrr_at_5": 0.19}
-      },
-      "v6_corpus_95_testable": {
-        "testable": "95/100（5 题所引法律正文不在 v6 语料）",
-        "recall_at_5": 0.6421,
-        "recall_at_5_display": "64.2%",
-        "recall_at_10_display": "70.5%",
-        "recall_at_20_display": "83.2%",
-        "recall_at_30_display": "87.4%",
-        "mrr_at_5": 0.46,
-        "hits": "61/95",
-        "count_unmapped_as_miss": "61.0%（61/100）",
-        "lexical_hybrid_baseline": {"recall_at_5_display": "28.4%", "hits": "27/95", "mrr_at_5": 0.189}
-      },
-      "optimization_round": {
-        "doc": "docs/retrieval-v8-optimization.md",
-        "variants_tested": 15,
-        "outcome": "全部无增益或有害——现行配置在调参集（p31/p68/real38）上已到局部最优；90% 目标未达成",
-        "diagnosis": "95 题里 91 题的正确答案已在召回池内；34 道未进前五的题里 29 道的正确答案在语义前 30 名 → 瓶颈是排序器对「语义近邻 vs 真正答案」的判别力（CPU 小模型边界），不是召回",
-        "cross_layer_tradeoff": "交叉重排对写出来的题净赚（p31 +6.4pt、p68 +5.9pt、v8 +7 题），对真实口语问句净亏（real38 71.1% → 关掉交叉 81.6%）；保留交叉层是因为目标口径是盲写题",
-        "not_available": "更大/法律领域模型（无 GPU：bge-large 与 m3e 编码全语料 2–3.4 小时、bge-reranker-large 37 秒/查询）；章节标题进索引（需重编码全部条文）；LLM 问句改写（本机无 ollama/无 GPU/无 API key）"
-      },
-      "paraphrase_audit": {
-        "第一轮题面与目标条文重合≥8字": "32/100（中位 6 字、最长 24 字）",
-        "第二轮题面与目标条文重合≥8字": "0/100（中位 2 字、最长 5 字）",
-        "第一轮按同尺分档 v7 R@5": "≥8字 96.9%（31/32）、4-7字 94.6%、≤3字 77.4%（24/31）",
-        "第二轮按同尺分档 v7 R@5": "4-7字 100%（15/15）、≤3字 57.5%（46/80）"
-      },
-      "gold_fix": "2 处（反不正当竞争法 2025 修订版编号：商业秘密 第九条→第十条、虚假宣传 第八条→第九条；题面未改，审计字段在 qbank）"
-    },
-    "synth177": {
-      "recall_at_5": 0.9944,
-      "recall_at_5_display": "99.4%",
-      "mrr_at_5": 0.994
-    },
-    "targets": {
-      "blind_first_round_ge_90": true,
-      "blind_second_round_holdout_ge_90": true,
-      "real_ge_70": true,
-      "note": "第一轮 90% 之所以达标含两层污染（题面近乎照抄 32/100 + w_cross 在该集上选），留出复核为 66.0%（v7 语料），本地管线未达线；2026-10-04 LLM 重排可选层上线后 v8 留出 92.0%（longcat-2.5-preview-free / deepseek-v4.1-flash），达成；无 LLM 层的本地管线仍是 66.0%，两种口径分开陈述。"
-    },
-    "maintained_by": "本节由语义线手工维护（scripts/eval_semantic_rerank.py 的结果 JSON 誊写）。gen_eval_report.py 重跑只重建 real/synth 各节，会丢掉本节——重跑后请按 docs/retrieval-v7-semantic.md §4b/§7 回填；复现命令在该文档 §7。"
-  },
-  "llm_rerank": {
-    "note": "LLM 重排可选层（statute_rag/llm_rerank.py）：运行时完整管线（词法三通道→语义并池+交叉编码器）的前 50 名候选 → 大模型 listwise 挑出至多 5 条按相关性提前。只重排不发明条目；API 失败/超时/解析失败一律原序降级。默认关闭（构造需显式 API key，经环境变量配置）。调参只发生在调参集（p31/real38），v8 留出题每配置只测一次；temperature 0 的单次测量有 ±2 题噪声，数字不逐位可复现（须注明模型与日期）。机制、逐题明细与 8 道 top50 外漏题清单见 docs/retrieval-llm-rerank.md。",
-    "config": {
-      "candidates_top_n": 50,
-      "pick": 5,
-      "temperature": 0,
-      "thinking": "disabled（space-bunny-free 只认 reasoning_effort=low，实际零思考输出）",
-      "max_tokens": "不设（思考模型设上限会被 reasoning 烧穿、正文截断）",
-      "insert_point": "词法三通道 → 语义并池+交叉编码器 → LLM 重排（管线原样保留）"
-    },
-    "date": "2026-10-04",
-    "blind_v8_holdout": {
-      "baseline_recall_at_5": 0.66,
-      "baseline_display": "66.0%",
-      "ceiling": "top50=92%、top100=93%、R@30=89%（离线算得）——92.0% 已打满 top50 天花板",
-      "certified": {
-        "longcat-2.5-preview-free": {
-          "recall_at_5": 0.92,
-          "recall_at_5_display": "92.0%",
-          "hits": "92/100",
-          "recall_at_1_display": "82.0%",
-          "cost": "免费（OpenCode 限时免费档，无限量）",
-          "latency_p50_s": 3.9
-        },
-        "deepseek-v4.1-flash": {
-          "recall_at_5": 0.92,
-          "recall_at_5_display": "92.0%",
-          "hits": "92/100",
-          "recall_at_1_display": "85.0%",
-          "cost": "OpenCode Go 套餐内（本轮评测耗滚动窗口 1%）",
-          "latency_p50_s": 2.8
-        },
-        "space-bunny-free": {
-          "recall_at_5": 0.91,
-          "recall_at_5_display": "91.0%",
-          "hits": "91/100",
-          "recall_at_1_display": "82.0%",
-          "cost": "免费（OpenCode 限时免费档）",
-          "latency_p50_s": 3.0
-        },
-        "deepseek-flash_paid_reference": {
-          "recall_at_5": 0.92,
-          "recall_at_5_display": "92.0%（top50）/ 93.0%（top100）",
-          "hits": "92/100",
-          "recall_at_1_display": "85.0%",
-          "cost": "≈0.9 分/次（top50，高峰价）",
-          "latency_p50_s": 0.7
-        }
-      },
-      "beyond_top50": "8 题金标不在前 50（7 题不在前 100、1 题第 57），全为抽象规则的口语转述：非法吸收公众存款（刑法176）、缓刑条件（刑法72）、侵权管辖（民诉29）、诉前保全（民诉104）、行诉受案范围（行诉12）、不执行拘留（治安23）、人民调解自愿原则（调解法3）、侵犯商业秘密（反不正当竞争10）——属召回层缺口，重排不可达，改进方向是章节标题进索引等召回手段",
-      "tuning_sets": {
-        "p31": "74.2% → 83.9%（26/31，三模型一致）",
-        "real38": "71.1% → 89.5%（deepseek-v4.1-flash，与付费平台版逐题一致）/ 86.8%（longcat）/ 84.2%（space-bunny）"
-      }
-    }
   }
 }

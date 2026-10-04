@@ -221,7 +221,7 @@ py -3.13 scripts/analyze_real_eval.py --corpus data/corpus.jsonl --gold gold/gol
 py -3.13 scripts/ablate_retrieval.py --corpus data/corpus.jsonl \
     --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl
 
-# 5) 单元测试（218 例）
+# 5) 单元测试（237 例）
 py -3.13 -m unittest discover -s tests
 ```
 
