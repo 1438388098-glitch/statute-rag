@@ -370,7 +370,7 @@
 
   function loadLaws() {
     if (LAW_CACHE) { renderLawList(el.lawFilter.value); return; }
-    fetch("/api/laws").then(function (r) { return r.json(); }).then(function (d) {
+    fetch("api/laws").then(function (r) { return r.json(); }).then(function (d) {
       LAW_CACHE = d.laws || [];
       renderLawList(el.lawFilter.value);
     }).catch(function () {
@@ -405,7 +405,7 @@
     el.q.value = "";
     el.out.innerHTML = '<div class="skeleton"><div class="bar" style="width:60%"></div>' +
       '<div class="bar" style="width:92%"></div></div>';
-    fetch("/api/articles?law=" + encodeURIComponent(law) + "&limit=300")
+    fetch("api/articles?law=" + encodeURIComponent(law) + "&limit=300")
       .then(function (r) { return r.json(); })
       .then(function (d) { renderArticles(d); })
       .catch(function () {
@@ -655,7 +655,7 @@
   }
 
   function fillMeta() {
-    fetch("/api/meta").then(function (r) { return r.json(); }).then(function (m) {
+    fetch("api/meta").then(function (r) { return r.json(); }).then(function (m) {
       state.metaBadge = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
       el.badge.textContent = state.metaBadge;
     }).catch(function () {
@@ -672,7 +672,7 @@
     state.inflight = ctl;
     el.go.disabled = true;
     renderLoading();
-    var url = "/api/search?q=" + encodeURIComponent(q) + "&k=" + state.k;
+    var url = "api/search?q=" + encodeURIComponent(q) + "&k=" + state.k;
     if (el.deep && el.deep.checked) { url += "&deep=1"; }
     fetch(url, ctl ? { signal: ctl.signal } : undefined).then(function (r) {
       return r.json().then(function (body) { return { ok: r.ok, body: body }; });
