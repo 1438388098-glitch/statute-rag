@@ -121,6 +121,25 @@ def self_check(corpus, gold):
           % (len(corpus), len(gold)))
 
 
+def build(out_dir="demo_corpus", num_articles=DEFAULT_ARTICLES,
+          gold_size=DEFAULT_GOLD_SIZE, seed=DEFAULT_SEED):
+    """生成并落盘演示语料与金标，返回 (corpus, gold, corpus_path, gold_path)。
+
+    main() 与单测（tests/test_app.py）共用这一条路径：演示语料是 .gitignore 的
+    产物，单测若因它缺失而 skip，例数就随环境浮动，check_doc_numbers.py 的
+    例数对账在 CI 上必然漂移。缺就现场生成，例数才是确定的。
+    """
+    corpus = build_corpus(num_articles, seed)
+    gold = make_gold(corpus, size=gold_size, seed=seed)
+
+    os.makedirs(out_dir, exist_ok=True)
+    corpus_path = os.path.join(out_dir, "corpus.jsonl")
+    gold_path = os.path.join(out_dir, "gold.jsonl")
+    save_corpus(corpus, corpus_path)
+    save_gold(gold, gold_path)
+    return corpus, gold, corpus_path, gold_path
+
+
 def main():
     parser = argparse.ArgumentParser(description=u"生成合成演示语料（假条文 + 金标）")
     parser.add_argument("--out-dir", default="demo_corpus", help=u"输出目录")
@@ -129,14 +148,8 @@ def main():
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     args = parser.parse_args()
 
-    corpus = build_corpus(args.num_articles, args.seed)
-    gold = make_gold(corpus, size=args.gold_size, seed=args.seed)
-
-    os.makedirs(args.out_dir, exist_ok=True)
-    corpus_path = os.path.join(args.out_dir, "corpus.jsonl")
-    gold_path = os.path.join(args.out_dir, "gold.jsonl")
-    save_corpus(corpus, corpus_path)
-    save_gold(gold, gold_path)
+    corpus, gold, corpus_path, gold_path = build(
+        args.out_dir, args.num_articles, args.gold_size, args.seed)
 
     self_check(corpus, gold)
     print("语料已写入：", corpus_path)

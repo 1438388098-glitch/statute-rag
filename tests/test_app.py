@@ -21,6 +21,20 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DEMO_CORPUS = os.path.join(ROOT, "demo_corpus", "corpus.jsonl")
 
 
+def _ensure_demo_corpus():
+    """演示语料是 .gitignore 的产物，缺就现场生成。
+
+    早前这里直接 skip，代价是单测例数随环境浮动（有语料 237 例、无语料 220 例），
+    而 check_doc_numbers.py 的例数对账在 CI 上先跑——那时 demo_corpus 还没生成，
+    于是例数必然对不上、CI 连续红。缺就生成，例数才是确定的。
+    """
+    if os.path.exists(DEMO_CORPUS):
+        return
+    sys.path.insert(0, ROOT)
+    from scripts import make_demo_corpus
+    make_demo_corpus.build(os.path.join(ROOT, "demo_corpus"))
+
+
 def _get(port, path):
     """返回 (status, body)。4xx/5xx 也要能拿到 body，故捕获 HTTPError。"""
     url = "http://127.0.0.1:%d%s" % (port, path)
@@ -34,8 +48,7 @@ def _get(port, path):
 class AppServerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists(DEMO_CORPUS):
-            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        _ensure_demo_corpus()
         cls.state = build_state(DEMO_CORPUS)
         cls.server = make_server(cls.state, "127.0.0.1", 0)
         cls.port = cls.server.server_address[1]
@@ -168,8 +181,7 @@ class DeepModeUnconfiguredTest(_DeepServerMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists(DEMO_CORPUS):
-            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        _ensure_demo_corpus()
         cls._start(build_state(DEMO_CORPUS))
 
     def test_meta_reports_llm_unavailable(self):
@@ -192,8 +204,7 @@ class DeepModeWithStubTest(_DeepServerMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists(DEMO_CORPUS):
-            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        _ensure_demo_corpus()
 
         class StubReranker(object):
             top_n = 50
@@ -226,8 +237,7 @@ class DeepModeWithJevStubTest(_DeepServerMixin, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists(DEMO_CORPUS):
-            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        _ensure_demo_corpus()
         from statute_rag.jev_rerank import JevReranker
 
         class StubJev(JevReranker):
