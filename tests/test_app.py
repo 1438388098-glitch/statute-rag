@@ -220,5 +220,60 @@ class DeepModeWithStubTest(_DeepServerMixin, unittest.TestCase):
         self.assertEqual(len(data["results"]), 3)
 
 
+class DeepModeWithJevStubTest(_DeepServerMixin, unittest.TestCase):
+    """注入桩 Jev（_post 假响应，不联网）：deep=1 走 Jev 判选，
+    响应带判分与判选参数（kind/mode/pick/tokens），每条结果带 jev_score。"""
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(DEMO_CORPUS):
+            raise unittest.SkipTest("缺少演示语料：先跑 python scripts/make_demo_corpus.py")
+        from statute_rag.jev_rerank import JevReranker
+
+        class StubJev(JevReranker):
+            def __init__(self):
+                JevReranker.__init__(self)
+                self._post = self._fake
+
+            def _fake(self, payload):
+                crit = payload["questions"]["rank"]["criteria"]
+                n = len(crit)
+                probs = dict((str(i), 0.01) for i in range(1, n + 1))
+                probs[str(n)] = 1.0  # 让池里最后一条候选拿最高分
+                return {"model": self._model, "cost": "0",
+                        "usage": {"input_tokens": 10, "output_tokens": 5},
+                        "answers": {"rank": {"type": "choice", "choice": str(n),
+                                             "confidence": 0.9, "probabilities": probs}}}
+
+        cls._start(build_state(DEMO_CORPUS, llm_reranker=StubJev()))
+
+    def test_meta_reports_jev(self):
+        _status, body = _get(self.port, "/api/meta")
+        data = json.loads(body)
+        self.assertTrue(data["rerank"]["available"])
+        self.assertEqual(data["rerank"]["kind"], "jev")
+        self.assertEqual(data["rerank"]["mode"], "choice")
+        self.assertEqual(data["rerank"]["top_n"], 50)
+
+    def test_deep_exposes_jev_scores_and_params(self):
+        _status, body = _get(self.port, "/api/search?q=%E6%BC%94%E7%A4%BA&k=3&deep=1")
+        data = json.loads(body)
+        dr = data["deep_rerank"]
+        self.assertTrue(dr["applied"])
+        self.assertEqual(dr["kind"], "jev")
+        self.assertEqual(dr["mode"], "choice")
+        self.assertEqual(dr["pick"], 5)
+        self.assertEqual(dr["input_tokens"], 10)
+        self.assertEqual(dr["output_tokens"], 5)
+        self.assertEqual(dr["score_scale"], "0–1")
+        for r in data["results"]:
+            self.assertIn("jev_score", r)
+            self.assertIsNotNone(r["jev_score"])
+            self.assertIn("jev_rank", r)
+            self.assertIn("jev_pick", r)
+        # 桩让池里最后一条拿最高分 → 判选第一且标记 pick
+        self.assertEqual(data["results"][0]["jev_pick"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

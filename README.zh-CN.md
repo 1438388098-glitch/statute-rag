@@ -118,6 +118,29 @@ top-50 并入召回池 → 加权 RRF 融合 → 交叉编码器（bge-reranker-
 送进来的候选零损耗（26 救回 / 0 挤掉）。机制、配置环境变量、诚实声明与复现命令见
 [docs/retrieval-llm-rerank.md](docs/retrieval-llm-rerank.md)。
 
+### Jev 重排层（可选，2026-10-04）
+
+同一个位置，换一个裁判：**Jev**（TypeSafe System One，OpenCode Zen `POST /zen/v1/systemone`）。
+它不是 chat 模型，不会「生成」一个 JSON 序号数组，而是对每个候选给出**结构化判断**
+（`choice` 概率 / `score` 分值 / `noul` 概率），`statute_rag/jev_rerank.py` 再据此定序：
+默认把 50 条候选作为**一个 choice 问题**一次问完（listwise），也支持**每候选一个 score 问题**
+（pointwise）。契约与 LLM 层完全一致：只重排不发明条目、至多提前 `pick` 条、任何失败原序降级、
+只用标准库、不进核心 import 链。**与上表同一份 v8 留出题、同一份候选池**实测：
+
+| 裁判（都接在同一套本地管线的前 50 名之后） | R@5 | R@1 | 救回/挤掉 | 单次 p50 | 100 题费用 |
+|---|---|---|---|---|---|
+| + longcat-2.5-preview-free（chat） | 92.0% | 82.0% | 26 / 0 | 3614 ms（p95 23 s） | $0（免费档） |
+| + deepseek-v4.1-flash（chat） | 92.0% | 85.0% | — | 2750 ms | Go 套餐内 |
+| + **Jev choice，付费 `jev-1.13`** | **92.0%** | **84.0%** | 26 / 0 | **1438 ms** | **$0.0368** |
+| + Jev score，付费 `jev-1.13` | 92.0% | 82.0% | 26 / 0 | 1642 ms | $0.0492 |
+
+Jev 与 chat 裁判同样打满 92% 的 top50 天花板，但**延迟长尾好得多**（p95 2.4–2.9 s，
+longcat 是 23 s），单题约 $0.00037；专项探针实测单次 choice 调用 **p50 1278 ms**，
+**单 key 64 并发零失败、零 429**。诚实声明：免费档 `jev-1.13-free` 持续调用会被限流
+（实测 429 `FreeUsageLimitError`，100 次里 62–100 次降级），生产要用付费档；
+Web 界面现在会在每条结果上显示 Jev 判分。机制、成本与延迟表、choice 与 score 的取舍、
+失败分析与复现命令见 [docs/retrieval-jev-rerank.md](docs/retrieval-jev-rerank.md)。
+
 依赖与降级：语义层需 `numpy + transformers + torch`（CPU 即可）+ 离线预算的条文向量；
 不装/不传时检索行为与上表基线**逐位一致**，核心保持零第三方依赖。接线与复现命令见该文档 §5。
 
@@ -182,7 +205,7 @@ statute_rag/          核心包（纯标准库）
 scripts/              CLI 与 Web 服务：run_eval、search_cli、app（Web 界面）、bench、
                       gen_eval_report、check_doc_numbers、make_demo_corpus、ablate_retrieval 等
 app/index.html        Web 界面单页（无构建、无外链、断网可用）
-tests/                218 例单测（unittest，临时目录自造语料）
+tests/                237 例单测（unittest，临时目录自造语料）
 gold/                 入库金标 + 人工复核状态
 docs/                 生成的评测报告、metrics.json、实验记录
 ```
@@ -228,7 +251,7 @@ docs/                 生成的评测报告、metrics.json、实验记录
 
 3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
 
-- 单元测试 218 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
+- 单元测试 237 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
 
 ```bash
 # 30 秒检索演示（需语料）

@@ -62,7 +62,7 @@ class AppState(object):
     """一次性建好的运行态：语料统计 + 检索器 + 元信息。"""
 
     def __init__(self, corpus, corpus_path, retriever, depth, k, build_seconds, synonyms,
-                 llm_reranker=None):
+                 reranker=None, reranker_kind=None):
         self.corpus = corpus
         self.corpus_path = corpus_path
         self.retriever = retriever
@@ -70,7 +70,10 @@ class AppState(object):
         self.k = k
         self.build_seconds = build_seconds
         self.synonyms = synonyms
-        self.llm_reranker = llm_reranker
+        self.reranker = reranker
+        self.reranker_kind = reranker_kind
+        # 向后兼容别名：早期接入点叫 llm_reranker
+        self.llm_reranker = reranker
         self._law_index = self._build_law_index()
 
     def _build_law_index(self):
@@ -111,8 +114,15 @@ class AppState(object):
             "query_max_chars": MAX_QUERY_CHARS,
             "synonym_entries": len(self.synonyms or {}),
             "llm_rerank": {
-                "available": self.llm_reranker is not None,
-                "model": self.llm_reranker.model if self.llm_reranker is not None else None,
+                "available": self.reranker is not None,
+                "model": self.reranker.model if self.reranker is not None else None,
+            },
+            "rerank": {
+                "available": self.reranker is not None,
+                "kind": self.reranker_kind,
+                "model": self.reranker.model if self.reranker is not None else None,
+                "mode": getattr(self.reranker, "mode", None) if self.reranker is not None else None,
+                "top_n": getattr(self.reranker, "top_n", None) if self.reranker is not None else None,
             },
             "build_seconds": round(self.build_seconds, 1),
         }
@@ -127,16 +137,35 @@ class AppState(object):
         started = time.time()
         depth = self.depth
         deep_info = None
-        if deep and self.llm_reranker is not None:
-            # 深度模式：召回池加深到 LLM 候选深度，重排后再截断（docs/retrieval-llm-rerank.md）
-            depth = max(self.depth, self.llm_reranker.top_n)
+        if deep and self.reranker is not None:
+            # 深度模式：召回池加深到重排器候选深度，重排后再截断
+            depth = max(self.depth, self.reranker.top_n)
         ranking, trace = self.retriever.recall_with_trace(q, depth)
         if deep:
-            if self.llm_reranker is not None:
-                ranking = self.llm_reranker.rerank(q, ranking, len(ranking))
-                deep_info = {"applied": True, "model": self.llm_reranker.model}
+            if self.reranker is not None:
+                tok0 = (getattr(self.reranker, "input_tokens", 0),
+                        getattr(self.reranker, "output_tokens", 0))
+                rr0 = time.time()
+                ranking = self.reranker.rerank(q, ranking, len(ranking))
+                rr_ms = (time.time() - rr0) * 1000.0
+                tok1 = (getattr(self.reranker, "input_tokens", 0),
+                        getattr(self.reranker, "output_tokens", 0))
+                deep_info = {
+                    "applied": True,
+                    "kind": self.reranker_kind,
+                    "model": self.reranker.model,
+                    "mode": getattr(self.reranker, "mode", None),
+                    "pick": getattr(self.reranker, "_pick", None),
+                    "ms": round(rr_ms, 1),
+                    "input_tokens": max(0, tok1[0] - tok0[0]),
+                    "output_tokens": max(0, tok1[1] - tok0[1]),
+                    "confidence": getattr(self.reranker, "last_confidence", None),
+                    "degraded": bool(getattr(self.reranker, "last_degraded", False)),
+                    "score_scale": "0–1" if self.reranker_kind == "jev" else None,
+                }
             else:
-                deep_info = {"applied": False, "reason": "服务端未配置 LLM 重排（STATUTE_RAG_LLM_KEY）"}
+                deep_info = {"applied": False,
+                             "reason": "服务端未配置重排（Jev 免费档或 STATUTE_RAG_LLM_KEY）"}
         took_ms = (time.time() - started) * 1000.0
         results = []
         for rank, cite in enumerate(ranking[:k], 1):
@@ -148,6 +177,10 @@ class AppState(object):
                 "text": cite["text"],
                 "score": cite["score"],
                 "channels": trace["hits"].get(cite["id"], []),
+                # Jev 判选视图（interfaces.py 允许新增字段）：仅当重排器是 Jev 时存在
+                "jev_score": cite.get("jev_score"),
+                "jev_rank": cite.get("jev_rank"),
+                "jev_pick": cite.get("jev_pick"),
             })
         return {
             "query": q,
@@ -165,8 +198,34 @@ class AppState(object):
         }
 
 
-def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K, llm_reranker=None):
-    """读语料并建索引。语料条数与部数直接取自语料本身，不写死。"""
+def _auto_reranker(prefer="auto"):
+    """挑选深度模式的重排器：默认优先 Jev（免费档、无需 key），退到 LLM（需 key）。
+
+    返回 (kind, reranker)；两个都不可用时返回 (None, None)。构造失败不拦检索。
+    """
+    from statute_rag import jev_rerank
+    if prefer in ("auto", "jev") and jev_rerank.enabled():
+        try:
+            return "jev", jev_rerank.JevReranker()
+        except Exception as exc:  # 配置问题不拦检索，stderr 留痕
+            print("Jev 重排启用失败（深度模式不可用）：%r" % exc, file=sys.stderr)
+    if prefer in ("auto", "llm"):
+        from statute_rag import llm_rerank
+        if llm_rerank.enabled():
+            try:
+                return "llm", llm_rerank.LLMReranker()
+            except Exception as exc:
+                print("LLM 重排启用失败（深度模式不可用）：%r" % exc, file=sys.stderr)
+    return None, None
+
+
+def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K, llm_reranker=None,
+                auto_rerank=False, prefer="auto"):
+    """读语料并建索引。语料条数与部数直接取自语料本身，不写死。
+
+    llm_reranker：显式传入的重排器（单测注入桩用；保留旧参数名以兼容接入方）。
+    auto_rerank：True 时按 prefer 自动挑选重排器（默认优先 Jev 免费档）。
+    """
     corpus = load_corpus(corpus_path)
     if not corpus:
         raise ValueError("语料为空：%s" % corpus_path)
@@ -176,16 +235,19 @@ def build_state(corpus_path, depth=HYBRID_FUSION_DEPTH, k=DEFAULT_K, llm_reranke
     started = time.time()
     retriever = HybridRetriever(corpus)
     build_seconds = time.time() - started
-    if llm_reranker is None:
-        # LLM 重排可选层：默认关闭；配置了 STATUTE_RAG_LLM_KEY 才启用（失败如实降级）
-        from statute_rag import llm_rerank
-        if llm_rerank.enabled():
-            try:
-                llm_reranker = llm_rerank.LLMReranker()
-            except Exception as exc:  # 配置了 key 但构造失败：不拦检索，stderr 留痕
-                print("LLM 重排启用失败（深度模式不可用）：%r" % exc, file=sys.stderr)
+    reranker = llm_reranker
+    reranker_kind = None
+    if reranker is not None:
+        try:
+            from statute_rag.jev_rerank import JevReranker
+            is_jev = isinstance(reranker, JevReranker)
+        except Exception:
+            is_jev = False
+        reranker_kind = "jev" if is_jev else "llm"
+    elif auto_rerank:
+        reranker_kind, reranker = _auto_reranker(prefer)
     return AppState(corpus, corpus_path, retriever, depth, k, build_seconds, load_synonyms(),
-                    llm_reranker=llm_reranker)
+                    reranker=reranker, reranker_kind=reranker_kind)
 
 
 def make_handler(state):
@@ -283,6 +345,8 @@ def main():
     parser.add_argument("--depth", type=int, default=HYBRID_FUSION_DEPTH,
                         help="融合通道深度（检索配置，勿轻改）")
     parser.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
+    parser.add_argument("--reranker", default="auto", choices=["auto", "jev", "llm", "off"],
+                        help="深度模式重排器：默认 auto（优先 Jev 免费档，退 LLM；off 关闭）")
     args = parser.parse_args()
 
     if hasattr(sys.stdout, "buffer"):
@@ -293,9 +357,18 @@ def main():
                      "再用 --corpus demo_corpus/corpus.jsonl 起界面" % args.corpus)
 
     print("读语料：%s" % args.corpus)
-    state = build_state(args.corpus, depth=args.depth, k=args.k)
+    auto = args.reranker != "off"
+    prefer = args.reranker if args.reranker in ("jev", "llm") else "auto"
+    state = build_state(args.corpus, depth=args.depth, k=args.k,
+                        auto_rerank=auto, prefer=prefer)
     print("已建索引：%d 条 / %d 部，用时 %.1f 秒"
           % (len(state.corpus), state.meta()["corpus"]["laws"], state.build_seconds))
+    rk = state.meta()["rerank"]
+    if rk["available"]:
+        extra = (" · " + rk["mode"] + " 模式") if rk["mode"] else ""
+        print("深度精排：%s · %s%s（越界即降级为原序）" % (rk["kind"], rk["model"], extra))
+    else:
+        print("深度精排：未启用（Jev 免费档默认可用；--reranker off 关闭）")
 
     _stub_getfqdn_if_broken()
     try:

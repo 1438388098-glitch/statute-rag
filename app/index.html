@@ -221,6 +221,16 @@
   .toggle { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
   .toggle:hover { text-decoration: underline; }
 
+  /* Jev 判分徽标：仅深度精排（Jev）时出现，把判选依据露出来，
+     不让「为什么这条排前面」变成黑箱 */
+  .jev { display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.72rem; color: var(--text-muted); flex: none; white-space: nowrap; }
+  .jev b { font-family: var(--font-mono); font-weight: 700; color: var(--ink); }
+  .jev.pick b { color: var(--accent); }
+  .jev-bar { display: inline-block; width: 3rem; height: 0.34rem; background: var(--bg-soft);
+    position: relative; overflow: hidden; }
+  .jev-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
+
   /* 空态 / 无命中 / 出错 */
   .panel { border: 1.5px solid var(--border); background: var(--surface); padding: 1.4rem 1.5rem; }
   .panel h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.5rem; }
@@ -271,7 +281,7 @@
   <form class="search-row" id="form" role="search" autocomplete="off">
     <input id="q" type="search" name="q" placeholder="用大白话问，比如：公司拖欠工资多久算违法"
            aria-label="检索问题" spellcheck="false">
-    <label class="deep-toggle" title="开启后把候选条文交给大模型重排一遍，更准但慢约 1-4 秒；需要服务端配置">
+    <label class="deep-toggle" title="开启后由 Jev 对候选条文判选重排（免费档，无需 key），更准但慢约 1–2 秒；每条结果会显示 Jev 判分">
       <input id="deep" type="checkbox">深度精排
     </label>
     <button id="go" type="submit">检索</button>
@@ -554,6 +564,22 @@
     return t;
   }
 
+  /* Jev 判分：分数 0–1，越高越可能最相关；细条给出直观量级。
+     jev_pick=1 表示这条被 Jev 选进「提前」的候选（最多 pick 条） */
+  function jevBadge(r) {
+    if (r.jev_score === null || r.jev_score === undefined) { return ""; }
+    var v = Number(r.jev_score);
+    var pct = Math.max(0, Math.min(1, isNaN(v) ? 0 : v));
+    var cls = r.jev_pick ? "jev pick" : "jev";
+    var title = "Jev 判分 " + r.jev_score + "（0–1，越高越可能最相关）"
+      + (r.jev_rank ? "；Jev 内部排名第 " + r.jev_rank : "")
+      + (r.jev_pick ? "；已被 Jev 提前" : "");
+    return '<span class="' + cls + '" title="' + esc(title) + '">' +
+      '<span class="lab">Jev 判分</span><b>' + esc(String(r.jev_score)) + "</b>" +
+      '<span class="jev-bar"><i style="width:' + (pct * 100).toFixed(0) + '%"></i></span>' +
+    "</span>";
+  }
+
   function card(r, query) {
     var body = bodyText(r);
     var long = body.length > 240;
@@ -568,6 +594,7 @@
       '<p class="text">' + highlight(body, query) + "</p>" +
       '<div class="card-foot">' +
         '<span class="id mono">id=' + esc(r.id) + "</span>" +
+        jevBadge(r) +
         (long ? '<button type="button" class="toggle">展开全文</button>' : "") +
         '<span class="spacer"></span>' +
         '<button type="button" class="copy" title="复制条文与出处">复制</button>' +
@@ -581,9 +608,28 @@
     var dr = data.deep_rerank;
     if (!dr) { return ""; }
     if (dr.applied) {
-      return '<span class="tag ok" title="候选条文已交 ' + esc(dr.model || "") + ' 重新排序">已深度精排</span>';
+      var isJev = dr.kind === "jev";
+      var label = isJev ? "Jev 判选" : "深度精排";
+      var bits = [];
+      if (dr.model) { bits.push(dr.model); }
+      if (dr.mode) { bits.push(dr.mode + " 模式"); }
+      var title = "候选条文已交 " + (dr.model || "重排器") + " 重新排序";
+      if (dr.ms) { title += "；本次重排 " + dr.ms + " ms"; }
+      if (dr.input_tokens) { title += "，token 输入 " + dr.input_tokens + " / 输出 " + dr.output_tokens; }
+      if (dr.confidence !== null && dr.confidence !== undefined) { title += "，置信度 " + dr.confidence; }
+      var text = label + (bits.length ? " · " + bits.join(" · ") : "");
+      return '<span class="tag ok" title="' + esc(title) + '">' + esc(text) + "</span>";
     }
     return '<span class="tag" title="' + esc(dr.reason || "") + '">深度精排未启用</span>';
+  }
+
+  function jevLegend(data) {
+    var dr = data.deep_rerank;
+    if (dr && dr.applied && dr.kind === "jev") {
+      return "<span>Jev 判分 0–1（越高越可能最相关），据此把前 "
+        + (dr.pick || 5) + " 条提前；悬停看每条判分</span>";
+    }
+    return "";
   }
 
   function renderResults(data) {
@@ -595,6 +641,7 @@
       '<span class="lead">显示前 ' + data.results.length + " 条</span>" +
       "<span>用时 " + data.took_ms + " ms</span>" +
       deepTag(data) +
+      jevLegend(data) +
       '<span class="spacer"></span>' +
       (data.truncated ? "<span>查询已截断到 " + data.query.length + " 字</span>" : "") +
     "</div>";
