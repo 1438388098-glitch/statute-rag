@@ -27,7 +27,7 @@
     --shadow-card: 0 14px 30px -22px rgba(23, 22, 15, 0.35);
     --font-display: 'Archivo', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     --font-mono: 'Space Mono', ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
-    --maxw: 60rem;
+    --maxw: 54rem;
   }
   * { box-sizing: border-box; }
   html { overflow-x: clip; }
@@ -56,27 +56,32 @@
     display: flex; align-items: center; gap: 0.7rem;
   }
   .mark { width: 0.85rem; height: 0.85rem; background: var(--accent); flex: none; }
-  .brand { font-weight: 800; font-size: 1.02rem; letter-spacing: -0.01em; }
+  /* 窄屏下品牌名与拉丁名都不许折行：折成「法条检/索」比缩字号更难读 */
+  .brand { font-weight: 800; font-size: 1.02rem; letter-spacing: -0.01em; white-space: nowrap; }
   .brand-en { font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
-    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
   .topbar-spacer { flex: 1; }
   .badge {
     font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
     border: 1px solid var(--border); padding: 0.15rem 0.5rem; white-space: nowrap;
   }
+  /* 回主站的入口：这个页面挂在个人站点域下，不能只进不出 */
+  .top-link { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+  .top-link:hover { color: var(--accent); }
 
   main { max-width: var(--maxw); margin-inline: auto; padding: 2rem 1.25rem 4rem; }
 
-  /* 搜索区 */
+  /* 搜索区：输入框是一格，深度开关是另一格，中间用浅分隔线断开——
+     开关跟输入框共边时会被读成输入框的一部分（回车提交时容易以为开关也归输入框管） */
   .search-row { display: flex; gap: 0; align-items: stretch; }
   .deep-toggle {
     display: flex; align-items: center; gap: 0.45rem;
-    font-size: 0.92rem; color: var(--text); background: var(--surface);
-    border: 1.5px solid var(--border-strong); border-left: none; border-right: none;
-    padding: 0 0.85rem; cursor: pointer; white-space: nowrap; user-select: none;
+    font-size: 0.9rem; color: var(--text); background: var(--surface);
+    border: 1.5px solid var(--border-strong); border-left: 1.5px solid var(--border);
+    border-right: none; padding: 0 0.9rem; cursor: pointer; white-space: nowrap; user-select: none;
   }
-  .deep-toggle input { accent-color: var(--accent); width: 1rem; height: 1rem; }
-  @media (max-width: 640px) { .deep-toggle { border-right: none; } }
+  .deep-toggle:hover { border-left-color: var(--border-strong); }
+  .deep-toggle input { accent-color: var(--accent); width: 0.95rem; height: 0.95rem; margin: 0; }
   #q {
     flex: 1; min-width: 0;
     font-family: var(--font-display); font-size: 1.12rem; font-weight: 500;
@@ -101,23 +106,27 @@
   }
   .samples button:hover { border-color: var(--border-strong); color: var(--ink); }
 
-  /* 最近查过：本地历史，点击重查、可单条删除、可清空 */
-  .hist { margin-top: 1.6rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+  /* 最近查过：本地历史，点击重查、可单条删除、可清空。
+     两列网格 + 每行一条发丝线。一行一条时句子只占半行、右侧甩出大片空白，
+     七八条就把首屏撑满；分两列后列宽收窄，计数与删除键自然贴近文字 */
+  .hist { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
   .hist-head { display: flex; align-items: baseline; gap: 0.7rem; }
   .hist-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
     letter-spacing: 0.04em; }
   .hist-clear { font-size: 0.74rem; color: var(--text-muted); }
   .hist-clear:hover { color: var(--ink); text-decoration: underline; }
-  .hist-list { list-style: none; margin: 0.5rem 0 0; padding: 0;
-    display: flex; flex-direction: column; gap: 0.1rem; }
-  .hist-list li { display: flex; align-items: baseline; gap: 0.6rem; }
-  .hist-list .q-btn { text-align: left; font-size: 0.9rem; color: var(--text);
+  .hist-list { list-style: none; margin: 0.45rem 0 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    column-gap: 1.8rem; }
+  .hist-list li { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0;
+    border-bottom: 1px solid var(--border); padding: 0.3rem 0; }
+  .hist-list .q-btn { text-align: left; font-size: 0.88rem; color: var(--text);
     flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .hist-list .q-btn:hover { color: var(--accent); }
-  .hist-list .cnt { font-family: var(--font-mono); font-size: 0.72rem;
+  .hist-list .cnt { font-family: var(--font-mono); font-size: 0.7rem;
     color: var(--text-muted); flex: none; }
   .hist-list .cnt.zero { color: #b04a2f; }
-  .hist-list .del { font-size: 0.8rem; color: #b6b4aa; flex: none; padding: 0 0.2rem; }
+  .hist-list .del { font-size: 0.78rem; color: #c6c4ba; flex: none; }
   .hist-list .del:hover { color: var(--ink); }
 
   /* 按法律浏览：法名目录，点开改看法条列表 */
@@ -153,43 +162,56 @@
   .art .text { margin: 0; font-size: 0.93rem; color: var(--text); white-space: pre-wrap; }
   .more { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.6rem; }
 
-  /* 状态行 */
+  /* 状态行：这次结果集的说明（条数 / 用时 / 是否走了深度精排） */
   .status {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.9rem;
     border-bottom: 2px solid var(--border-strong); padding-bottom: 0.55rem;
-    margin: 2rem 0 0.9rem; font-size: 0.86rem; color: var(--text-muted);
+    margin: 1.6rem 0 0.85rem; font-size: 0.86rem; color: var(--text-muted);
   }
   .status .lead { color: var(--text); font-weight: 700; }
+  .status .tag { font-size: 0.72rem; font-weight: 700; padding: 0.05rem 0.4rem;
+    border: 1px solid var(--border); color: var(--text-muted); }
+  .status .tag.ok { border-color: var(--accent); color: var(--accent); }
   .status .spacer { flex: 1; }
 
   /* 结果卡片：直角白面，hover/选中靠边框加深 + 投影，不用彩色侧条 */
-  .results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.85rem; }
+  .results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
   .card {
     background: var(--surface); border: 1.5px solid var(--border);
     padding: 1rem 1.1rem; transition: border-color 0.12s ease, box-shadow 0.12s ease;
   }
   .card:hover, .card.active { border-color: var(--border-strong); box-shadow: var(--shadow-card); }
   .card-head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+  /* 序号定宽：1 与 10 同宽，左侧栏才齐 */
   .rank {
-    font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700;
-    background: var(--accent); color: #fff; padding: 0.1rem 0.42rem; flex: none;
+    font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; line-height: 1.6;
+    background: var(--accent); color: #fff; min-width: 1.4rem; text-align: center;
+    padding: 0 0.3rem; flex: none;
   }
-  .law { font-weight: 800; letter-spacing: -0.005em; }
+  .law { font-weight: 800; letter-spacing: -0.005em; min-width: 0; }
   .num { font-family: var(--font-mono); font-size: 0.84rem; color: var(--text-muted); }
   .card-head .spacer { flex: 1; }
+  /* 通道标签是出处元信息，不是内容：全走灰，蓝只留给序号与命中词 */
   .chan { display: flex; gap: 0.28rem; }
   .chan span {
-    font-size: 0.68rem; font-weight: 700; color: var(--accent);
-    border: 1px solid var(--accent); padding: 0 0.3rem; line-height: 1.5;
+    font-size: 0.68rem; font-weight: 600; color: var(--text-muted);
+    border: 1px solid var(--border); padding: 0 0.3rem; line-height: 1.5;
   }
-  .chan span.plain { color: var(--text-muted); border-color: var(--border); font-weight: 600; }
+  .chan span.plain { color: #a3a29a; }
   .text {
-    margin: 0.55rem 0 0; font-size: 0.95rem; color: var(--text);
+    margin: 0.5rem 0 0; font-size: 0.95rem; line-height: 1.8; color: var(--text);
     display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
     white-space: pre-wrap;
   }
   .card.open .text { display: block; overflow: visible; }
-  mark { background: none; color: inherit; font-weight: 700; border-bottom: 2px solid var(--accent); }
+  /* 命中词用浅蓝底纹，不用蓝色下划线：下划线与站内链接同形，
+     一段话里出现三四次会被读成坏链接或拼写波浪线 */
+  mark {
+    background: rgba(39, 69, 240, 0.13);
+    background: color-mix(in srgb, var(--accent) 13%, transparent);
+    color: inherit; font-weight: 700; padding: 0.05em 0.1em;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
   .card-foot { display: flex; align-items: baseline; gap: 0.8rem; margin-top: 0.6rem; }
   .card-foot .id { font-family: var(--font-mono); font-size: 0.7rem; color: #a3a29a; }
   .card-foot .spacer { flex: 1; }
@@ -218,9 +240,17 @@
   .bar { height: 0.7rem; background: var(--bg-soft); margin-bottom: 0.5rem; animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
+  /* 窄屏：输入框独占一行，深度开关与按钮排到第二行。
+     三者挤一行时输入框只剩一百来像素，长问句完全看不见自己输了什么 */
   @media (max-width: 34rem) {
-    #go { padding: 0 1rem; }
-    .card-head .spacer { display: none; }
+    .search-row { flex-wrap: wrap; }
+    #q { flex: 1 1 100%; border-right: 1.5px solid var(--border-strong); }
+    .deep-toggle { flex: 1 1 auto; justify-content: center; border-left: none; }
+    #go { padding: 0 1.6rem; }
+    .topbar-in { padding: 0.6rem 0.9rem; gap: 0.55rem; }
+    .badge { font-size: 0.66rem; padding: 0.12rem 0.4rem; }
+    .brand-en, .top-link { display: none; }
+    main { padding: 1.4rem 0.9rem 3rem; }
   }
 </style>
 </head>
@@ -233,6 +263,7 @@
     <span class="brand-en">statute-rag</span>
     <span class="topbar-spacer"></span>
     <span class="badge" id="badge">语料加载中…</span>
+    <a class="top-link" href="https://iweistoicqc5.top/">← 个人网站</a>
   </div>
 </header>
 
@@ -511,8 +542,21 @@
     }).join("");
   }
 
+  /* 语料把条号写进了正文，标题行又单独显示一次（「中华人民共和国民法典 第一千一百七十条」
+     后面紧跟「第一千一百七十条 二人以上…」）。标题已给过条号，正文只在这一处剥掉前缀；
+     复制走的是接口原文 r.text，不受影响 */
+  function bodyText(r) {
+    var t = String(r.text || "");
+    var n = String(r.num || "");
+    if (n && t.slice(0, n.length) === n && /^[\s\u3000]/.test(t.slice(n.length, n.length + 1))) {
+      return t.slice(n.length).replace(/^[\s\u3000]+/, "");
+    }
+    return t;
+  }
+
   function card(r, query) {
-    var long = r.text.length > 240;
+    var body = bodyText(r);
+    var long = body.length > 240;
     return '<li class="card" data-i="' + r.rank + '">' +
       '<div class="card-head">' +
         '<span class="rank">' + r.rank + "</span>" +
@@ -521,7 +565,7 @@
         '<span class="spacer"></span>' +
         '<span class="chan">' + channelBadges(r.channels) + "</span>" +
       "</div>" +
-      '<p class="text">' + highlight(r.text, query) + "</p>" +
+      '<p class="text">' + highlight(body, query) + "</p>" +
       '<div class="card-foot">' +
         '<span class="id mono">id=' + esc(r.id) + "</span>" +
         (long ? '<button type="button" class="toggle">展开全文</button>' : "") +
@@ -529,6 +573,17 @@
         '<button type="button" class="copy" title="复制条文与出处">复制</button>' +
       "</div>" +
     "</li>";
+  }
+
+  /* 深度精排状态写进「本次结果」的状态行，不占用顶栏的语料徽标：
+     徽标说的是库里有多少条，与这次查询无关，被覆盖掉就丢了信息 */
+  function deepTag(data) {
+    var dr = data.deep_rerank;
+    if (!dr) { return ""; }
+    if (dr.applied) {
+      return '<span class="tag ok" title="候选条文已交 ' + esc(dr.model || "") + ' 重新排序">已深度精排</span>';
+    }
+    return '<span class="tag" title="' + esc(dr.reason || "") + '">深度精排未启用</span>';
   }
 
   function renderResults(data) {
@@ -539,6 +594,7 @@
     var head = '<div class="status">' +
       '<span class="lead">显示前 ' + data.results.length + " 条</span>" +
       "<span>用时 " + data.took_ms + " ms</span>" +
+      deepTag(data) +
       '<span class="spacer"></span>' +
       (data.truncated ? "<span>查询已截断到 " + data.query.length + " 字</span>" : "") +
     "</div>";
@@ -656,8 +712,7 @@
 
   function fillMeta() {
     fetch("api/meta").then(function (r) { return r.json(); }).then(function (m) {
-      state.metaBadge = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
-      el.badge.textContent = state.metaBadge;
+      el.badge.textContent = m.corpus.articles.toLocaleString() + " 条 · " + m.corpus.laws + " 部";
     }).catch(function () {
       el.badge.textContent = "元信息不可用";
     });
@@ -679,12 +734,6 @@
     }).then(function (res) {
       if (res.ok) {
         renderResults(res.body);
-        var dr = res.body.deep_rerank;
-        if (dr && dr.applied) {
-          el.badge.textContent = "已深度精排（" + dr.model + "）";
-        } else if (dr && !dr.applied && state.metaBadge) {
-          el.badge.textContent = state.metaBadge + " · 深度精排未启用（服务端未配置）";
-        }
       } else { renderError(res.body && res.body.error ? res.body.error : "服务返回了错误"); }
     }).catch(function (err) {
       if (err && err.name === "AbortError") { return; }
