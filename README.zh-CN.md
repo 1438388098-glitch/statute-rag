@@ -4,13 +4,13 @@
 
 # statute-rag · 法条混合检索底座
 
-把「条」当检索单元、把「可验证的出处」当硬约束的法条检索 pipeline，配套**可复现的离线评测**。结构化分条 → 字符二元组 BM25（原查询 + 同义扩展查询）/ LIKE 多路融合（RRF）→ 强制条文级引用。
+把「条」当检索单元、把「可验证的出处」当硬约束的法条检索 pipeline，配套**可复现的离线评测**。结构化分条 → 字符二元组 BM25（原查询 + 同义扩展查询）/ LIKE 多路融合（RRF）→ 强制条文级引用。在这条冻结的词法基线之上，还有三层**可选、默认关闭**的层：**语义重排层（v7）**与 **LLM / Jev 重排层**。
 
-**版本：v0.1.1 tag；主分支在其上新增了度量底座（通道深度与 k 解耦、Recall@k 曲线）、冻结的 Reranker 接口与可安装打包——见 [CHANGELOG.md](CHANGELOG.md)。语义向量通道在路线图中，不在任何版本的宣称范围内。**
+**版本：v0.1.1 tag。主分支在其上新增：度量底座（通道深度与 k 解耦、Recall@k 曲线）、可安装打包、已接入 v7 语义层的 `Reranker` 接口，以及可选的 LLM / Jev 重排层（均未发版——见 [CHANGELOG.md](CHANGELOG.md)）。核心保持零依赖；语义层需 `numpy + transformers + torch`（CPU 即可），LLM/Jev 层需 API key。三层默认全关，不接线时 `HybridRetriever` 与已发布词法数字逐位一致。**
 
 ## 快速跑通（无需语料，约 30 秒）
 
-纯 Python 标准库，零第三方运行时依赖。Python ≥ 3.8（CI 跑 3.9 与 3.13）。
+核心为纯 Python 标准库，零第三方运行时依赖。Python ≥ 3.8（CI 跑 3.8、3.9 与 3.13）。
 
 ```bash
 # 1) 生成合成演示语料：约 100 条程序生成的假条文 + 合成金标（固定种子，可重复）
@@ -30,11 +30,11 @@ python scripts/search_cli.py --corpus demo_corpus/corpus.jsonl "台账公示" --
 ## Web 界面（app 样子，零前端依赖）
 
 ```bash
-python scripts/app.py                                      # 读 data/corpus_v3.jsonl
+python scripts/app.py                                      # 读 data/corpus_v7.jsonl（当前语料）
 python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时先跑演示语料
 ```
 
-起一个本机服务（缺省 `http://127.0.0.1:8787/`）并自动开浏览器。界面是一个搜索框加结果卡片：法名 + 条号 + 原文，命中片段用蓝色下划线标出；每条还标出**来自哪几个通道**（字面 / 扩写 / 原句），口语被词典改写时把改写后的检索串一并显示——「为什么这条被检出来」在界面上是看得见的，不是黑箱。
+起一个本机服务（缺省 `http://127.0.0.1:8787/`）并自动开浏览器。界面是搜索框加结果卡片（法名 + 条号 + 原文，命中片段用蓝色下划线标出），另有**按法律浏览**（逐部法的目录与条文数，点开看全文）与**本机搜索历史**（可重查 / 单条删除 / 清空）；每条还标出**来自哪几个通道**（字面 / 扩写 / 原句）、可一键复制条文与出处，口语被词典改写时把改写后的检索串一并显示，开 Jev 重排时每条结果附 Jev 判分——「为什么这条被检出来」在界面上是看得见的，不是黑箱。
 
 三条纪律：
 
@@ -44,7 +44,7 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 
 > 语料不随仓库分发，界面要在**有语料的地方**跑。界面上的数字（条数、部数、建索引耗时、同义词典条目数）全部读自语料与代码本身，不写死。
 
-## 数字（当前口径 v7 语料 = v6 + 361 条纯追加，25,987 条 / 444 部；金标：合成 v6（177 题）、真实问句 v6（38 题）、盲写 v8（100 题））
+## 数字（当前口径 v7 语料 = v6 + 361 条纯追加，25,987 条 / 444 部；金标：合成 v6（177 题）、真实问句 v6（38 题）、盲写隔离题库第一轮（100 题，v7 调参集）与第二轮 / v8（100 题，留出集））
 
 > **口径变更声明**：2026-10 起，v1 段 14,212 行「公报页块行」已**全部换成校验过的条级正文**（v4 换掉干净源件覆盖的 132 部；v5 补齐其余 104 部）；v6 再把刑法主文换成**含十二个修正案的整合版**（醉驾、帮信罪、侵犯公民个人信息罪等 53 个「之N」条文首次可检），并补上外部隔离题库量出的 **7 部缺法**（社会保险法、工伤保险条例、著作权法、专利法、环境保护法、税收征收管理法、消费者权益保护法正文），**语料在 v6 定型**（v7 为之后的纯追加，见语料一节，不改下表任何数字）。换检索单元会改变同一批问句的 R@5：同一批题、各自迁移金标下 v4 34.2% → v5 47.4% → v6 52.6%（最后一步含金标对齐与权重重标定，见下）。下表为当前词法口径，v6 与 v7 相同（v7 为纯追加）；**v1~v5 是历史口径**（见文末并列表），请勿与当前数字混读。逐法来源与校验见 [docs/article-level-rebuild.md](docs/article-level-rebuild.md)。
 
@@ -55,10 +55,10 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 | **hybrid（v0.1.1：+ 同义扩展查询路，加权）** | **100.0%** | **1.000** | **52.6%（20/38）** | **0.284** |
 
 > **噪声限定**：38 题金标下 1 题 = 2.6pt，真实 R@5 52.6% = 20/38；跨 k 稳定的硬结论是深池 R@30 94.7%（36/38）。
-> **合成金标 100% 是设计使然，不是指标吹牛**：v6 的合成金标按 v6 语料重新生成（`make_gold` 取条文内高区分度短语作查询），干净条级语料上「独特短语→原条文」是 LIKE 通道的舒适区，它守的是灾难性损坏（语料污染、索引坏），不再有细粒度回归检测力——细粒度判别靠下面两套金标。
-> **外部隔离题库（出题代理盲写，从未参与调参）**：100 题法条检索题由出题代理在看不到语料与代码的环境编写（每题联网/本地法条库核对条文，0 题未核实），hybrid **R@5 70.0%、R@10 80.0%、R@30 90.0%、MRR 0.584**。它是本仓库的「只验不调」验收集（见 [docs/retrieval-v6-retune.md](docs/retrieval-v6-retune.md) §2.3）。题库经映射后有 100/100 可测（v5 语料时为 89/100，缺口即 v6 补的法）。
+> **合成金标 100% 是设计使然，不是指标吹牛**：v6 的合成金标按 v6 语料重新生成（`make_gold` 取条文内高区分度短语作查询），干净条级语料上「独特短语→原条文」是 LIKE 通道的舒适区，它守的是灾难性损坏（语料污染、索引坏），不再有细粒度回归检测力——细粒度判别靠下面的真实问句与两轮盲写金标。
+> **盲写隔离题库·第一轮（100 题）**：由出题代理在看不到语料与代码的环境编写（每题联网/本地法条库核对条文，0 题未核实），词法 hybrid **R@5 70.0%、R@10 80.0%、R@30 90.0%、MRR 0.584**，是词法基线的「只验不调」验收集（见 [docs/retrieval-v6-retune.md](docs/retrieval-v6-retune.md) §2.3）。题库经映射后 100/100 可测（v5 语料时为 89/100，缺口即 v6 补的法）。**但给语义层用时它不是留出集**：v7 的融合权重 w_cross 就在这套题上选，事后审计还发现 100 题里 32 题题面与目标条文近乎照抄（中位 6 字、最长 24 字）——所以它上面的 v7 分数是调参内数字；真正无调参嫌疑的留出复核见下节语义重排（第二轮题库）。
 
-**深度召回曲线**（固定 depth=30 的同一份排名逐 k 截取，跨 k 可比）：真实问句上 hybrid **Recall@10 68.4% → Recall@20 86.8% → Recall@30 94.7%**。38 题里只剩 2 题未进 top-30，16 题在 6-30 名内（重排通道的工作面）。逐 k 表与排名分布见 [docs/eval_report.md](docs/eval_report.md)——由 `scripts/gen_eval_report.py` 生成，[docs/metrics.json](docs/metrics.json) 是数字的单一来源（CI 校验两份 README 与之一致）。
+**深度召回曲线**（固定 depth=30 的同一份排名逐 k 截取，跨 k 可比）：真实问句上 hybrid **Recall@10 68.4% → Recall@20 86.8% → Recall@30 94.7%**。38 题里只剩 2 题未进 top-30，16 题在 6-30 名内（重排层的工作面）。逐 k 表与排名分布见 [docs/eval_report.md](docs/eval_report.md)——由 `scripts/gen_eval_report.py` 生成，[docs/metrics.json](docs/metrics.json) 是数字的单一来源（CI 校验两份 README 与之一致）。
 
 ### 语义重排层（v7，可选依赖，2026-10）
 
@@ -67,7 +67,7 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 | 金标 | hybrid 基线 R@5 | + 语义重排 v7 R@5 | R@30 |
 |---|---|---|---|
 | 真实问句 38 题（v7 调参所用） | 52.6% | 71.1%（27/38） | 97.4% |
-| 盲写隔离题·第一轮 100 题（v7 调参所用） | 70.0% | 90.0%（90/100） | 95.0% |
+| 盲写隔离题·第一轮 100 题（v7 调参所用） | 70.0% | 89.0%（89/100） | 95.0% |
 | **盲写隔离题·第二轮 100 题（留出复核，无调参嫌疑）** | **33.0%** | **66.0%（66/100）** | 89.0% |
 | 合成金标 177 题 | 100.0% | 99.4%（1 题） | 99.4% |
 
@@ -78,7 +78,7 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 > 接 LLM 重排可选层后同一金标为 92.0%（见下节）。**
 > 两轮不可混读：第一轮题面有 32/100 与目标条文重合 ≥8 字（中位 6 字、最长 24 字，近乎
 > 照抄），第二轮 0/100（中位 2 字、最长 5 字，全部自然语言转述）——按同一把尺子分档，
-> 第一轮「真转述」那 31 题 v7 命中 77.4%，第二轮「真转述」得分见该文档 §7。
+> 第一轮「真转述」那 31 题 v7 命中 77.4%（词典 v2 重测后第一轮整体 89.0%、89/100，-1 题如实记录）；第二轮「真转述」得分见该文档 §7。
 > 第二轮映射时量出 5 题所引法律正文不在语料（商标法、价格法、道路交通安全法、职工
 > 带薪年休假条例、预防未成年人犯罪法），已按 v6 补缺的同一套镜像门禁补入 6 部共 361 条
 > （含备选指向的反家庭暴力法），语料 v7 = 25,987 条 / 444 部，第二轮可测率 95/100 → 100/100；
@@ -88,7 +88,7 @@ python scripts/app.py --corpus demo_corpus/corpus.jsonl    # 没真实语料时�
 > 模型）**全部无增益或有害**，诊断显示瓶颈是排序器对「语义近邻 vs 真正答案」的判别力
 > （95 题里 91 题的正确答案已在召回池内）——本地算法路径止步于此，**90% 最终由 LLM
 > 重排可选层达成**（见下节），全记录见
-> [docs/retrieval-v8-optimization.md](docs/retrieval-v8-optimization.md)。第一轮 90% 的
+> [docs/retrieval-v8-optimization.md](docs/retrieval-v8-optimization.md)。第一轮调参内 90%（词典 v2 重测后 89.0%）的
 > 两层污染量化、两轮分档对照与逐题失败清单见 [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md) §7。
 > **交叉层的账**：交叉重排对写出来的题净赚（p31 +6.4pt、p68 +5.9pt、v8 +7 题），对真实
 > 口语问句净亏（真实 38 题 71.1% → 关掉交叉 81.6%）；保留它是因为目标口径是盲写题，
@@ -186,6 +186,11 @@ legal.db ──importer──> 语料 JSONL（质检三层过滤）
                        + 同义扩展查询 BM25（synonyms.json 367 词条
                          口语↔法定表述 + 数字读法归一，query_expansion.py）
                        + LIKE（原查询）
+              ▼  以下三层可选、默认关闭（每一层不接线就退回上一层）
+   ├── semantic_rerank.py  v7 语义层：双向量模型名次集成 → 语义 top-50 并入召回池
+   │                       → 加权 RRF → 交叉编码器对前 10 名做名次 RRF 混合
+   ├── llm_rerank.py       大模型对前 50 名 listwise 挑 5 条提前（只重排不发明条目）
+   └── jev_rerank.py       Jev 结构化判选（choice / score）对前 50 名定序
               ▼
    评测（gold.py + eval_harness.py）
    · 金标：IDF 最高且【全库唯一】的 6 字短语 → 关键词查询，seed 固定
@@ -201,7 +206,10 @@ statute_rag/          核心包（纯标准库）
   ├── query_expansion.py  口语↔法定表述词典 + 数字读法归一
   ├── gold.py             合成金标生成（全库唯一短语约束）
   ├── eval_harness.py     Recall@k / MRR / 多 k 评测 / 排名分布
-  └── interfaces.py       v0.2 Reranker 接口约定（模型后接）
+  ├── interfaces.py       Reranker 接口约定（v7 语义层就接在这里）
+  ├── semantic_rerank.py  可选 v7 语义层（延迟 import numpy/transformers，不进核心 import 链）
+  ├── llm_rerank.py       可选 LLM listwise 重排层（标准库 urllib，环境变量配置，默认关闭）
+  └── jev_rerank.py       可选 Jev 结构化判选重排层（同一位置、同一契约）
 scripts/              CLI 与 Web 服务：run_eval、search_cli、app（Web 界面）、bench、
                       gen_eval_report、check_doc_numbers、make_demo_corpus、ablate_retrieval 等
 app/index.html        Web 界面单页（无构建、无外链、断网可用）
@@ -216,42 +224,45 @@ docs/                 生成的评测报告、metrics.json、实验记录
 - **命中来源可查（`recall_with_trace`）**：融合排名附带「每条命中来自哪些通道」，轨迹只读、不参与打分，`recall` 直接由它返回（逐位等价）。Web 界面据此解释「为什么这条被检出来」，同时让「展示层看到的排名就是评测时的那份排名」变成结构上的事实——想分叉也分不了。
 - **质检宁可少导入**：条级重建前，PDF 双栏解析会把左右栏串成重叠的「页块」，质检只能过滤可确定性识别的污染（`(cid:` 残片、过短、公报排版垃圾），识别不了乱序——所以 v5 的做法是**换源**（官方 docx / 公开法规文本镜像 / 官方页面 / legal.db 原文按行重切），而不是去猜被切碎的排版；取不出干净整篇的文书**宁缺**（当前只剩 1 部）。
 - **查询扩展只增不改（v0.1.1）**：真实问句是口语（坐牢/看望/社保/房东），条文是法言法语（服刑/会见/社会保险/出租人），词法通道无从命中。解法是数据化的领域词典（`statute_rag/synonyms.json`，367 词条通用映射）+ 追加式查询扩展 + RRF 多路融合：**原查询整体保留**，扩展表述另开一路检索，无命中自动省略。防过拟合约束与逐轮消融（含无增益即移除的负结果）见 [docs/retrieval-improvement.md](docs/retrieval-improvement.md)。
-- **通道深度与 k 解耦**：通道深度是检索配置，不是返回条数。`search(k)` 用固定深度（已发布数字的口径）；跨 k 对比走 `recall(query, depth)`——同一份排名逐 k 截取（`evaluate_multi_k`）。真实金标实测（当前 v6 口径）Recall@5 52.6% → Recall@30 94.7%：**大多数真实问题其实已经检到，输在排序**——这是 v0.2 重排通道的量化立项依据。
+- **通道深度与 k 解耦**：通道深度是检索配置，不是返回条数。`search(k)` 用固定深度（已发布数字的口径）；跨 k 对比走 `recall(query, depth)`——同一份排名逐 k 截取（`evaluate_multi_k`）。真实金标实测（当前 v7 口径）Recall@5 52.6% → Recall@30 94.7%：**大多数真实问题其实已经检到，输在排序**——这是重排通道的量化立项依据，v7 与可选的 LLM/Jev 层已把它填上。
 
 ## 边界（先说清不做什么）
 
-- **当前不是语义 RAG**：无 embedding、无向量库。字符二元组 BM25 是词法检索。v0.1.1 用「法律口语↔法定表述同义词典 + 查询扩展」搭了一层词法桥（坐牢→服刑、探视→会见、社保→社会保险、1000元→一千元），把真实问句 Recall@5 从 26.3% 提到 44.7%（v1 语料口径，14,212 条）；但纯语义改写（无词典可桥的表述）仍命中不了，语义通道需要可用的中文 embedding 模型/接口，属 v0.2。
-- **金标有两套**：合成金标（唯一短语 → 关键词查询）衡量词法召回上限；真实问句金标（38 题，问句来自网络真实提问，LLM 核验、人工法律复核进行中）衡量真实问句上的表现（当前 v3 口径 44.7%；v0.1 基线 26.3%、v1/v2 的历史口径数字见上文「数字」节）。见 [docs/real-question-eval.md](docs/real-question-eval.md)。
+- **核心刻意做词法，语义做在可选层**：核心无 embedding、无向量库——字符二元组 BM25 是词法检索，零依赖、随处可跑，所有已发布的词法数字量的都是这条基线。语义通道不再是路线图承诺，而是已落地的可选层（v7）；LLM / Jev 重排层再接在它上面；三层默认关闭、依赖不进核心包。v0.1.1 用「法律口语↔法定表述同义词典 + 查询扩展」搭了一层词法桥（坐牢→服刑、探视→会见、社保→社会保险、1000元→一千元），把真实问句 Recall@5 从 26.3% 提到 44.7%（v1 语料口径，14,212 条）；纯语义改写（无词典可桥的表述）交给可选层——见上文「数字」节。
+- **金标有四套**，各有明确角色：合成金标（177 题，词法召回上限）、真实问句金标（38 题，LLM 核验、人工法律复核进行中）、盲写隔离题库第一轮（100 题，v7 融合权重就在这套上选）、盲写隔离题库第二轮 / v8（100 题，硬隔离条件下写成、**从未参与调参**，是本仓库唯一无调参嫌疑的盲写数字）。见 [docs/real-question-eval.md](docs/real-question-eval.md)。
 - **语料不随仓库分发**：法律条文来自本地 legal-wisdom 库（legal.db：257 部 / 14,344 条），2026-10 又按法考汇编对账补入官方源 11,061 条；**当前口径：25,987 条条级条文，覆盖 444 部**（v1 为 14,212 条 / 238 部，且其中 61% 的行是公报页块、不是条）。v5 把 14,212 行 v1 页块行整批换成 13,965 条条级行：7,340 条来自官方 docx 干净源件、6,401 条来自公开法规文本镜像、187 条来自中国政府网官方页面、37 条由 legal.db 文本按行重切/整篇单元得到。v6 在 v5 之上：刑法主文换成含修正案一至十二的整合版（504 条，来自公开法规文本镜像，经「基础号+之N号」门禁校验），并按外部隔离题库量出的缺口补入 7 部法律正文（541 条，社会保险法 2018 / 工伤保险条例 2010 / 著作权法 2020 / 专利法 2020 / 环境保护法 2014 / 税收征收管理法 2015 / 消费者权益保护法 2013）。**v7 在 v6 之上纯追加**：第二轮隔离题库量出 6 部缺法（商标法 2019 / 价格法 1997 / 道路交通安全法 2021 / 职工带薪年休假条例 2007 / 预防未成年人犯罪法 2020 / 反家庭暴力法 2015，共 361 条，同一套镜像门禁），第二轮题库的可测率从 95/100 变成 100/100，三套旧金标上的词法数字与 v6 **逐位相同**（见 [docs/retrieval-v8-optimization.md](docs/retrieval-v8-optimization.md) §1）。仓库只含代码、测试与评测产物；复现边界见下文「验证」的三档说明。
 - 不构成法律意见；条文内容以官方发布为准。
 
 ## 验证（真实数字，非虚构）
 
-**两套金标，两套口径，数字都如实并列**：
+**四套金标，各有明确角色——下面复现命令重算的是其中两套词法金标**：
 
-- **合成金标口径**：题目由条文中的全库唯一短语机械生成（seed=20260918，N=177），衡量「给定条文中的独特表述，能否把该条文检回来」的词法召回上限。金标见 [gold/gold_synth_seed20260918.jsonl](gold/gold_synth_seed20260918.jsonl)。它同时是查询扩展改进的**留出守门**：真实金标提升的有效性以「合成金标回退 ≤2pt」约束，实测零回退；词典在合成金标上的触发率仅 0.6%（1/177），是防口语词典过拟合的天然哨兵。
+- **合成金标口径**：题目由条文中的全库唯一短语机械生成（seed=20260918，N=177），衡量「给定条文中的独特表述，能否把该条文检回来」的词法召回上限。金标见 [gold/gold_synth_v6_seed20260918.jsonl](gold/gold_synth_v6_seed20260918.jsonl)。它同时是查询扩展改进的**留出守门**：真实金标提升的有效性以「合成金标回退 ≤2pt」约束，实测零回退；词典在合成金标上的触发率仅 0.6%（1/177），是防口语词典过拟合的天然哨兵。
 - **真实问句金标 v1（LLM 核验，人工法律复核进行中）**：38 条问句来自百度知道真实法律提问（逐条记录来源 URL），query 为问句原文直接送检。v0.1 基线 hybrid Recall@5 = **26.3%**，主因：口语词与法言法语无词法重叠、同部法律内部竞争、公报双栏法律的解析污染。v0.1.1（v1 口径）经通用同义词典 + 查询扩展提升至 **44.7%**。语料补全到 v3 后一度降到 31.6%，经检索侧重标定又回到 44.7%；v5 把页块行换成条级正文后为 **47.4%**（18/38，各自迁移金标）；v6 为 **52.6%**（20/38）——金标 9 处过时条目已按现行文本对齐（治安管理处罚法 2025、民诉法 2023、劳动争议解释（二）2025 等换版导致旧条号/旧 evidence 失配，由 [scripts/check_gold.py](scripts/check_gold.py) 结构门禁定位、[scripts/fix_gold_real38_stale.py](scripts/fix_gold_real38_stale.py) 对齐，每行带 gold_fix 审计字段），扩展通道权重亦按 v6 语料重标定（2.5→1.5，见 [docs/retrieval-v6-retune.md](docs/retrieval-v6-retune.md)）。剩余未命中题如实列出。逐题明细见 [docs/real-question-eval.md](docs/real-question-eval.md)，金标见 [gold/gold_real_38_v6.jsonl](gold/gold_real_38_v6.jsonl)，人工复核底稿见 [docs/gold-review-worksheet.md](docs/gold-review-worksheet.md)。
+- **盲写隔离题库·第一轮（100 题）**：由出题代理在看不到语料与代码的环境编写，每题联网/本地法条库核对条文（0 题未核实）。**v7 语义层的融合权重就是在这套题上选的**，事后审计又发现 100 题里 32 题题面与目标条文近乎照抄（中位 6 字、最长 24 字）——所以它上面的词法 70.0% / 语义 89.0% 是调参内数字，仅作对照保留。金标见 [gold/gold_external_v6.jsonl](gold/gold_external_v6.jsonl)。
+- **盲写隔离题库·第二轮 / v8 留出集（100 题）**：四个独立出题方互不知情、被硬性禁止读取本仓库任何路径与用户目录，各写 25 题自然语言转述（禁止复用条文 4 字以上连续片段）。**从未参与调参**——本仓库唯一无调参嫌疑的盲写数字：词法 33.0%、+ v7 语义 66.0%、+ 可选 LLM/Jev 重排 92.0%（均为 v7 语料、100/100 可测）。金标见 [gold/gold_blind_v8_v7.jsonl](gold/gold_blind_v8_v7.jsonl)，题库见 [gold/qbank_blind_v8.jsonl](gold/qbank_blind_v8.jsonl)。
 
 复现——三档口径，如实说明：
 
 1. **没有语料（所有人）**：上面的 demo 路径验证机制端到端可跑通（CI 每次 push 都断言）。
-2. **同源语料（legal-wisdom 同版本 legal.db）**：完整复现两套金标数字：
+2. **同源语料（legal-wisdom 同版本 legal.db）**：完整复现两套词法金标数字（合成 100.0%、真实问句 52.6%；v7 是 v6 的纯追加，两版口径数字相同）：
 
    ```bash
-   # 合成金标
-   python scripts/run_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_synth_seed20260918.jsonl --out-dir data
+   # 合成金标（当前语料）
+   python scripts/run_eval.py --corpus data/corpus_v7.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl --out-dir data
    # 真实问句金标
-   python scripts/build_real_gold.py --corpus data/corpus_v3.jsonl --out gold/gold_real_38.jsonl
-   python scripts/run_eval.py --corpus data/corpus_v3.jsonl --gold gold/gold_real_38.jsonl --out-dir data --gold-desc "真实问句金标 v1（LLM 核验，人工法律复核进行中）"
+   python scripts/run_eval.py --corpus data/corpus_v7.jsonl --gold gold/gold_real_38_v6.jsonl --out-dir data --gold-desc "真实问句金标 v6"
    # 改进机制消融（基线 vs 改进配置，双金标；多 k）
-   python scripts/ablate_retrieval.py --corpus data/corpus_v3.jsonl \
-       --gold-real gold/gold_real_38.jsonl --gold-synth gold/gold_synth_seed20260918.jsonl \
+   python scripts/ablate_retrieval.py --corpus data/corpus_v7.jsonl \
+       --gold-real gold/gold_real_38_v6.jsonl --gold-synth gold/gold_synth_v6_seed20260918.jsonl \
        --ks 5,10,20,30
    ```
 
-3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
+   盲写题库、语义与 LLM/Jev 的数字还要接可选层（离线预算的条文向量 + LLM/Jev 判官的 API key），复现命令见 [docs/retrieval-v7-semantic.md](docs/retrieval-v7-semantic.md) §7、[docs/retrieval-llm-rerank.md](docs/retrieval-llm-rerank.md) 与 [docs/retrieval-jev-rerank.md](docs/retrieval-jev-rerank.md)。
 
-- 单元测试 237 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v6.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
+3. **自有中文法条语料**：检索三件套、合成金标与质检门开箱即用；但入库的 `gold_real_38_v6.jsonl` 的 `gold_id` 绑定我们导入版本的分块行 id，换语料无法直接重跑该金标数字——如需复用 38 题，用 `build_real_gold.py` 以自有语料重建行 id（问句与来源 URL 字段可平移）。
+
+- 单元测试 237 例：`python -m unittest discover -s tests`。延迟参考：`python scripts/bench.py`（本机相对口径，只用于前后对比）。金标体检：`python scripts/check_gold.py --corpus data/corpus_v7.jsonl --gold gold/gold_real_38_v6.jsonl --gold gold/gold_external_v6.jsonl --gold gold/gold_blind_v8_v7.jsonl --gold gold/gold_synth_v6_seed20260918.jsonl`。
 
 ```bash
 # 30 秒检索演示（需语料）
@@ -262,19 +273,19 @@ python scripts/search_cli.py --db <你的 legal.db> "承诺生效时合同成立
 ## 已知失败案例
 
 - **乱序条文污染（v5 已修；仅 1 部仍缺源）**：查询「正当防卫」时命中了《突发公共卫生事件应对法》的条文——该部 PDF 双栏解析把左右栏逐行交错，再按长度切成互相重叠的「页块」，语料里 61% 的行都是这种页块（一条 1,400 字的块里装着中位数 10 条条文）。质检层识别不了这种乱序，所以 v5 的处理是**换源、不猜排版**：14,212 行 v1 页块行整批换成 13,965 条校验过的条级正文，并在入口切断「按长度切块」这一步（逐法来源、版本日期与校验见 [docs/article-level-rebuild.md](docs/article-level-rebuild.md)）。判据是硬门：条号必须 1..N 全序、逐条不以句末标点收尾或夹带公报垃圾即丢、条号倒退回退则整法不用。只剩 1 部（最高人民法院关于基本医疗保险基金先行支付申请条件法律适用问题的批复）的公报版面把公告块与双栏正文交错在一起，本地与镜像都取不出干净整篇，**宁缺勿滥**：该部缺席并如实记入缺口清单。
-- **词法检索天花板（已被查询扩展推高一部分）**：38 题里只剩 2 题未进 top-30（页块换成条级后从 7 题降到 2 题），主因是纯语义等价（无词典可桥的改写）与同法/跨法相似条文竞争——这需要 v0.2 的向量语义通道 + 重排，不是继续堆词典能解决的。加权 RRF 与 BM25 k1/b 调参在 v1 语料上实测无增益、已移除（见 [docs/retrieval-improvement.md](docs/retrieval-improvement.md) §4 负结果）；但**语料扩容改变了该前提**：v3 里 100 余字的官方单条与 1,400 字的公报页块混排，BM25 长度归一化参数 b 与扩展通道权重从「惰性」变成「主导」；按 v3 重标定这两个参数（b 0.75→0.6、扩展权重 1→2.5）才把真实 R@5「救」回来，代价是 v1/v2 的 MRR@5 下降——全网格与负结果见 [docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md) §5–6。
-- **合成金标的保守性**：指标衡量「独特表述→条文」的词法召回（当前 v5 口径 86.4%，v4 94.9%，v1 历史口径 98.9%），真实问句（含错字、口语、多实体）的召回显著低于此（47.4%）——两个数字都如实报告，正因为如此。v5 的合成数字下降主因是**金标过时**：题目短语取自被换掉的旧行，只比短语仍在目标行内的题，v4 96.6% → v5 100.0%。
+- **词法天花板，以及各层把它推到哪里（剩余缺口在哪）**：在冻结的词法基线上，真实问句的未命中主要来自纯语义等价（无词典可桥的改写）、同法/跨法相似条文竞争与解析污染——正是 v7 语义层与 LLM/Jev 层要解决的：真实问句 R@5 52.6% → 71.1%（语义），盲写 v8 留出 33.0% → 66.0% → 92.0%（+ LLM/Jev）。剩下的是**盲写题库上的召回侧缺口**：8 道金标不在前 50 名候选内（7 道不在前 100），全为抽象规则的口语转述（「不用马上进监狱」对 缓刑/暂予监外执行），与条文几乎零字符重合，任何重排都救不了——要治本得把编/章标题写进索引文本，或换更强的法律领域模型（见 [docs/retrieval-llm-rerank.md](docs/retrieval-llm-rerank.md) §4）。此前的 BM25/权重调参史（v3 页块混排下 b 0.75→0.6、扩展权重 1→2.5，干净条级语料 v6 起重标定回 1.5）属历史；全网格与负结果见 [docs/retrieval-v3-diagnosis.md](docs/retrieval-v3-diagnosis.md) §5–6 与 [docs/retrieval-v6-retune.md](docs/retrieval-v6-retune.md)。
+- **合成金标的保守性/饱和性**：指标衡量「独特表述→条文」的词法召回（v6 按语料重新生成的合成金标在干净条级语料上饱和到 100.0%，见「数字」节；v5 迁移口径 86.4%、v4 94.9%、v1 历史口径 98.9%），真实问句（含错字、口语、多实体）的召回显著低于此（52.6%）——两个数字都如实报告，正因为如此。v5 的合成数字下降主因是**金标过时**：题目短语取自被换掉的旧行；v6 按语料重新生成后回到饱和。
 
 ## FAQ
 
-- **为什么不用 embedding？** 字符二元组 BM25 刻意做词法检索：零依赖、无分词器、无模型——意义在于一个随处可跑的评测基线。语义通道已为 v0.2 排期，接口先冻结在 [statute_rag/interfaces.py](statute_rag/interfaces.py)（`Reranker` 约定），可选依赖不进核心包。
+- **为什么核心不用 embedding？** 字符二元组 BM25 刻意做词法检索：零依赖、无分词器、无模型——意义在于一个随处可跑的评测基线。embedding 与重排不再是路线图承诺，而是已落地的可选层，接口冻结在 [statute_rag/interfaces.py](statute_rag/interfaces.py)（`Reranker` 约定）：v7 语义层（[statute_rag/semantic_rerank.py](statute_rag/semantic_rerank.py)）与 LLM/Jev 重排层（[statute_rag/llm_rerank.py](statute_rag/llm_rerank.py)、[statute_rag/jev_rerank.py](statute_rag/jev_rerank.py)）。默认全关，可选依赖不进核心包。
 - **语料能给我用吗？** 不能——不随仓库分发（来源是本地 legal-wisdom 库）。可复用的是代码、金标 schema 与评测协议；复现边界见「验证」的三档说明。
 - **为什么 like 在真实问句上是 0.0%？** 真实问句是口语句子，在法条原文中逐字不出现，子串匹配无从命中。见 [docs/real-question-eval.md](docs/real-question-eval.md) §5。
 - **数字怎么核对？** [docs/metrics.json](docs/metrics.json) 是单一来源；CI 的 `check_doc_numbers.py` 对账两份 README；所有数字都能用上面的命令重新生成。
 
 ## Roadmap
 
-- **v0.2**：在冻结的 `Reranker` 接口上接语义重排通道（本地/远端可插拔，可选依赖）——目标已量化：把真实问句 Recall@5（47.4%）向 Recall@30 上限（94.7%）抬升；真实问句金标扩容（目标 200 题，并按现在的条级单元重写那 4 道《治安管理处罚法》的旧版题干）+ 人工法律复核。
+- **v0.2（已交付，2026-10）**：冻结的 `Reranker` 接口上的语义重排通道落地（v7，本地、可选依赖），其上再加可选的 LLM / Jev 重排层。留出集实测：真实问句 R@5 52.6% → 71.1%，盲写 v8 33.0% → 66.0% → 92.0%（+ LLM/Jev）。v0.2 剩余：真实问句金标扩容（38 → 200 题）+ 人工法律复核；以及把编/章标题写进索引文本，收掉盲写题库的召回侧缺口（8 道金标在前 50 外）——靠加深重排收不掉。那 4 道《治安管理处罚法》旧版题干已在 v6 按现行文本重写（gold_fix 审计字段）。
 - **v0.3**：条/款/项多级分块；法条版本对齐（时效性）；「检索不到就拒答」策略与幻觉护栏评测。
 
 ## 版本与引用
