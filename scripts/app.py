@@ -15,7 +15,7 @@
 传 --host，并自行置于反向代理之后——本项目默认不做这件事。
 
 用法：
-  python scripts/app.py                                  # 读 data/corpus_v4.jsonl（条级重建版）
+  python scripts/app.py                                  # 读 data/corpus_v7.jsonl（当前语料）
   python scripts/app.py --corpus demo_corpus/corpus.jsonl # 无真实语料时先跑演示语料
   python scripts/app.py --port 9000 --no-browser
 """
@@ -46,11 +46,10 @@ from statute_rag.query_expansion import load_synonyms  # noqa: E402
 from statute_rag.retrieval import HYBRID_FUSION_DEPTH, HybridRetriever  # noqa: E402
 
 APP_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app", "index.html")
-# 默认用条级重建版 v6：在 v5（全部公报页块行已换条级正文）之上，刑法主文换成
-# 含十二个修正案的整合版（醉驾/帮信等「之一」条文可检），并补上外部题库量出的
-# 7 部缺法（社会保险法、工伤保险条例、著作权法、专利法、环境保护法、税收征收
-# 管理法、消费者权益保护法正文）
-DEFAULT_CORPUS = os.path.join("data", "corpus_v6.jsonl")
+# 默认用当前语料 v7：在 v6（整合版刑法 + 补入外部题库量出的 7 部缺法）之上，
+# 纯追加第二轮隔离题库量出的 6 部缺法（商标法、价格法、道路交通安全法、职工带薪
+# 年休假条例、预防未成年人犯罪法、反家庭暴力法，361 条）——词法数字与 v6 逐位相同
+DEFAULT_CORPUS = os.path.join("data", "corpus_v7.jsonl")
 DEFAULT_K = 10
 MAX_K = 50
 # 超长查询只会稀释检索信号（且会让 URL 过长），截断比报错友好；
